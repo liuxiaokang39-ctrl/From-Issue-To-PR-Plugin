@@ -25,14 +25,14 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 
 | 阶段 | Skill | 输入 | 产出物 |
 | --- | --- | --- | --- |
-| 需求确认 | `issue-writer` | 用户口述需求、项目背景 | Issue 草稿：背景与目标、验收标准、范围边界、待确认问题 |
+| 需求确认 | `issue-writer` | 用户口述需求、项目背景 | 远端仓库中的 Issue + 本地留档：背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界、待确认问题 |
 | 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | 开发文档：技术方案、影响面、接口与数据结构变更、风险、测试策略 |
 | 任务拆分 | `task-planner` | 开发文档 | 待办任务清单：原子任务、验收标准、依赖顺序 |
 | 编码实现 | `implementer` | 任务清单、代码库 | 逐项实现的代码改动 |
 | 测试验证 | `tester` | 代码改动、验收标准 | 测试用例 + 测试结果报告（通过/失败项、回归范围） |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
-产物建议命名：`docs/issue.md`、`docs/dev-doc.md`、`docs/tasks.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
+产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-doc.md`、`docs/tasks.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
 
 ## Skill 清单
 
@@ -40,8 +40,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 
 - **职责**：把零散、模糊的想法收敛为一份可评审的 Issue。
 - **输入**：用户口述的需求、项目背景、相关代码或资料（可选）。
-- **产出**：Issue 草稿，包含背景、目标、验收标准、范围边界（做什么 / 不做什么）、待确认问题清单。
-- **关键行为**：主动追问细节、逐项确认；信息不足时不自行脑补需求。
+- **产出**：在远端仓库创建 Issue（远端为主仓库时建于主仓库；远端为 fork 时优先建于上游仓库，否则建于 fork），并在本地留档 `docs/requirement-issue/<仓库名>-<issue编号>-issue.md`；内容含背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界（做什么 / 不做什么）、待确认问题清单。
+- **关键行为**：先确认需求是否真实需要，再就尚不清楚的部分逐项提问确认；信息不足时不自行脑补需求；更新报告时只保留最新需求，不迁移过时内容。
 
 ### `dev-doc-writer` —— 开发文档
 
@@ -84,7 +84,9 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 .
 └── skills/
     ├── issue-writer/
-    │   └── SKILL.md
+    │   ├── SKILL.md
+    │   └── references/
+    │       └── issue-template.md
     ├── dev-doc-writer/
     │   └── SKILL.md
     ├── task-planner/
@@ -97,7 +99,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
         └── SKILL.md
 ```
 
-各 `SKILL.md` 当前仅包含元信息，正文待补充。
+`issue-writer` 的正文已补充，其余各 `SKILL.md` 当前仅包含元信息，正文待补充。
 
 ## 快速开始
 
