@@ -26,13 +26,13 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 | 阶段 | Skill | 输入 | 产出物 |
 | --- | --- | --- | --- |
 | 需求确认 | `issue-writer` | 用户口述需求、项目背景 | 远端仓库中的 Issue + 本地留档：背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界、待确认问题 |
-| 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | 开发文档：技术方案、影响面、接口与数据结构变更、风险、测试策略 |
+| 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | `docs/dev-docs/` 下的目录结构文档、开发文档（数据结构、函数定义）与配套流程图 |
 | 任务拆分 | `task-planner` | 开发文档 | 待办任务清单：原子任务、验收标准、依赖顺序 |
 | 编码实现 | `implementer` | 任务清单、代码库 | 逐项实现的代码改动 |
 | 测试验证 | `tester` | 代码改动、验收标准 | 测试用例 + 测试结果报告（通过/失败项、回归范围） |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
-产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-doc.md`、`docs/tasks.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
+产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/tasks.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
 
 ## Skill 清单
 
@@ -45,10 +45,10 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 
 ### `dev-doc-writer` —— 开发文档
 
-- **职责**：把已确认的 Issue 转成一份可落地的技术方案文档。
+- **职责**：把已确认的 Issue 转成可落地的开发文档与配套流程图。
 - **输入**：Issue 内容、代码库上下文。
-- **产出**：开发文档，包含技术方案、影响面分析、接口与数据结构变更、风险与兼容性、测试策略。
-- **关键行为**：先读代码再落方案，方案需落到文件 / 模块级别。
+- **产出**：`docs/dev-docs/` 下的目录结构文档（`目录结构.md`）、开发文档（数据结构、函数定义，含公开属性与多线程属性）、配套流程图（状态流转、函数内运行流程）。
+- **关键行为**：先建立 / 确认目录结构文档，再与人类确认读写与只读工作区；默认私有公开属性；需求不涉及多线程时默认普通函数；设计终稿交由人类决定，人类设计能满足需求时优先采用。
 
 ### `task-planner` —— 任务拆分
 
@@ -88,7 +88,11 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
     │   └── references/
     │       └── issue-template.md
     ├── dev-doc-writer/
-    │   └── SKILL.md
+    │   ├── SKILL.md
+    │   └── references/
+    │       ├── visibility-attributes.md
+    │       ├── dev-doc-template.md
+    │       └── flowchart-template.md
     ├── task-planner/
     │   └── SKILL.md
     ├── implementer/
@@ -99,7 +103,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
         └── SKILL.md
 ```
 
-`issue-writer` 的正文已补充，其余各 `SKILL.md` 当前仅包含元信息，正文待补充。
+`issue-writer`、`dev-doc-writer` 的正文已补充，其余各 `SKILL.md` 当前仅包含元信息，正文待补充。
 
 ## 快速开始
 
