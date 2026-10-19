@@ -27,12 +27,12 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 | --- | --- | --- | --- |
 | 需求确认 | `issue-writer` | 用户口述需求、项目背景 | 远端仓库中的 Issue + 本地留档：背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界、待确认问题 |
 | 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | `docs/dev-docs/` 下的目录结构文档、开发文档（数据结构、函数定义）与配套流程图 |
-| 任务拆分 | `task-planner` | 开发文档 | 待办任务清单：原子任务、验收标准、依赖顺序 |
+| 任务拆分 | `task-planner` | 开发文档 | `docs/dev-docs/<序号>/` 下的任务文件（`<编号>-<任务>.md`）与执行顺序文件（`执行顺序.md`） |
 | 编码实现 | `implementer` | 任务清单、代码库 | 逐项实现的代码改动 |
 | 测试验证 | `tester` | 代码改动、验收标准 | 测试用例 + 测试结果报告（通过/失败项、回归范围） |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
-产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/tasks.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
+产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
 
 ## Skill 清单
 
@@ -52,10 +52,10 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 
 ### `task-planner` —— 任务拆分
 
-- **职责**：把开发文档拆成可执行、可验证的原子任务列表。
+- **职责**：把开发文档拆成可执行、可排序、可验收、可追踪的原子任务文件与执行顺序文件。
 - **输入**：开发文档。
-- **产出**：待办任务清单，每项含任务描述、验收标准、依赖顺序、涉及文件。
-- **关键行为**：任务粒度以「能独立验证」为准，避免大颗粒任务。
+- **产出**：`docs/dev-docs/<序号>/` 下的任务文件 `<编号>-<任务>.md`（含编号、任务、工作区、依赖、产出、验收标准，及从开发文档摘录的函数/结构体/数据库表）与执行顺序文件 `执行顺序.md`。
+- **关键行为**：依赖关系必须由拆分阶段显式产出、禁止循环依赖；执行顺序由 `scripts/topo_sort.py` 扫描任务文件后拓扑排序生成，不手工排序；任务粒度以「能独立验证」为准，每个任务须声明其工作区。
 
 ### `implementer` —— 编码实现
 
@@ -94,7 +94,11 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
     │       ├── dev-doc-template.md
     │       └── flowchart-template.md
     ├── task-planner/
-    │   └── SKILL.md
+    │   ├── SKILL.md
+    │   ├── references/
+    │   │   └── task-template.md
+    │   └── scripts/
+    │       └── topo_sort.py
     ├── implementer/
     │   └── SKILL.md
     ├── tester/
@@ -103,7 +107,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
         └── SKILL.md
 ```
 
-`issue-writer`、`dev-doc-writer` 的正文已补充，其余各 `SKILL.md` 当前仅包含元信息，正文待补充。
+`issue-writer`、`dev-doc-writer`、`task-planner` 的正文已补充，其余各 `SKILL.md` 当前仅包含元信息，正文待补充。
 
 ## 快速开始
 
