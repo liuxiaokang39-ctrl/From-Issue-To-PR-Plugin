@@ -91,6 +91,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
     │   ├── SKILL.md
     │   └── references/
     │       ├── visibility-attributes.md
+    │       ├── function-design-rules.md
     │       ├── dev-doc-template.md
     │       └── flowchart-template.md
     ├── task-planner/
