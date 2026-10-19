@@ -28,7 +28,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 | 需求确认 | `issue-writer` | 用户口述需求、项目背景 | 远端仓库中的 Issue + 本地留档：背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界、待确认问题 |
 | 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | `docs/dev-docs/` 下的目录结构文档、开发文档（数据结构、函数定义）与配套流程图 |
 | 任务拆分 | `task-planner` | 开发文档 | `docs/dev-docs/<序号>/` 下的任务文件（`<编号>-<任务>.md`）与执行顺序文件（`执行顺序.md`） |
-| 编码实现 | `implementer` | 任务清单、代码库 | 逐项实现的代码改动 |
+| 编码实现 | `implementer` | 开发文档与流程图、任务清单、代码库 | 逐项实现的代码改动 |
 | 测试验证 | `tester` | 代码改动、验收标准 | 测试用例 + 测试结果报告（通过/失败项、回归范围） |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
@@ -60,9 +60,9 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 ### `implementer` —— 编码实现
 
 - **职责**：按任务清单逐项实现代码改动。
-- **输入**：任务清单、代码库。
-- **产出**：代码改动，并逐项标记任务完成。
-- **关键行为**：严格按清单推进，不做清单之外的重构或「顺手改进」。
+- **输入**：开发文档与流程图（`docs/dev-docs/`）、任务清单（`docs/dev-docs/<序号>/`）、代码库。
+- **产出**：代码改动，并在达到验收标准后逐项标记任务完成。
+- **关键行为**：先读开发文档与流程图了解任务全貌，再按 `执行顺序.md` 给出的顺序逐项推进、不自行改序；只改任务声明的工作区；函数编写遵循函数设计规则，Rust 项目额外遵循 Rust 全局约束；严格按清单推进，不做清单之外的重构或「顺手改进」。
 
 ### `tester` —— 测试验证
 
@@ -101,14 +101,17 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
     │   └── scripts/
     │       └── topo_sort.py
     ├── implementer/
-    │   └── SKILL.md
+    │   ├── SKILL.md
+    │   └── references/
+    │       ├── function-design-rules.md
+    │       └── rust-global-constraints.md
     ├── tester/
     │   └── SKILL.md
     └── pr-creator/
         └── SKILL.md
 ```
 
-`issue-writer`、`dev-doc-writer`、`task-planner` 的正文已补充，其余各 `SKILL.md` 当前仅包含元信息，正文待补充。
+`issue-writer`、`dev-doc-writer`、`task-planner`、`implementer` 的正文已补充，`tester`、`pr-creator` 的 `SKILL.md` 当前仅包含元信息，正文待补充。
 
 ## 快速开始
 
