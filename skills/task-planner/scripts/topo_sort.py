@@ -9,7 +9,7 @@
 
 输入为任务目录（扫描其中除「执行顺序.md」外的所有 .md 任务文件），
 或单个任务文件。每个任务文件需含 `编号：<编号>` 与 `依赖：<编号, 编号>` 两行，
-无依赖填「无」；`任务：<标题>` 用于在执行顺序中显示。
+无依赖填 NONE；`任务：<标题>` 用于在执行顺序中显示。
 
 输出：按拓扑序排列的执行顺序，形如 `1. 001 创建订单表及索引`。
 未指定 -o 时打印到标准输出；指定 -o 时写入该文件。
@@ -30,7 +30,7 @@ _TITLE_RE = re.compile(_KEY.format(key="(?:任务|标题|title)"), re.IGNORECASE
 _DEP_RE = re.compile(_KEY.format(key="(?:依赖|depends_on|depends)"), re.IGNORECASE)
 _HEADING_RE = re.compile(r"^#\s+(.+?)\s*$")
 _SEP_RE = re.compile(r"[,，、;；/\s]+")
-_NO_DEP = {"", "无", "none", "null", "-", "n/a", "空"}
+_NO_DEP = {"none", "null", "n/a", "-", "无", "空"}
 _ORDER_FILENAME = "执行顺序.md"
 
 
@@ -58,9 +58,10 @@ def parse_task_file(path: str) -> tuple[str, str, list[str]]:
             continue
         match = _DEP_RE.match(line)
         if match:
-            raw = _clean(match.group(1))
-            deps = [] if raw.lower() in _NO_DEP else [
-                d for d in (_clean(x) for x in _SEP_RE.split(raw)) if d
+            deps = [
+                d
+                for d in (_clean(x) for x in _SEP_RE.split(_clean(match.group(1))))
+                if d and d.lower() not in _NO_DEP
             ]
 
     if number is None:
