@@ -26,13 +26,13 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 | 阶段 | Skill | 输入 | 产出物 |
 | --- | --- | --- | --- |
 | 需求确认 | `issue-writer` | 用户口述需求、项目背景 | 远端仓库中的 Issue + 本地留档：背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界、待确认问题 |
-| 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | `docs/dev-docs/` 下的目录结构文档、开发文档（数据结构、函数定义）与配套流程图 |
+| 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | `docs/dev-docs/` 下的目录结构文档（docs 迁移信息 / 本项目工作区职责两份）、开发文档（数据结构、函数定义）、配套流程图，以及 `docs/migration-info/` 下的设计迁移记录 |
 | 任务拆分 | `task-planner` | 开发文档 | `docs/dev-docs/<序号>/` 下的任务文件（`<编号>-<任务>.md`）与执行顺序文件（`执行顺序.md`） |
 | 编码实现 | `implementer` | 开发文档与流程图、任务清单、代码库 | 逐项实现的代码改动 |
 | 测试验证 | `tester` | 代码改动、验收标准 | 测试用例 + 测试结果报告（通过/失败项、回归范围） |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
-产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
+产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/目录结构.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/migration-info/<序号>/<序号>-<迁移内容概况>.md`、`docs/test-report.md`；PR 描述随 PR 一并提交。
 
 ## Skill 清单
 
@@ -40,15 +40,15 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 
 - **职责**：把零散、模糊的想法收敛为一份可评审的 Issue。
 - **输入**：用户口述的需求、项目背景、相关代码或资料（可选）。
-- **产出**：在远端仓库创建 Issue（远端为主仓库时建于主仓库；远端为 fork 时优先建于上游仓库，否则建于 fork），并在本地留档 `docs/requirement-issue/<仓库名>-<issue编号>-issue.md`；内容含背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界（做什么 / 不做什么）、待确认问题清单。
-- **关键行为**：先确认需求是否真实需要，再就尚不清楚的部分逐项提问确认；信息不足时不自行脑补需求；更新报告时只保留最新需求，不迁移过时内容。
+- **产出**：在远端仓库创建 Issue（远端为主仓库时建于主仓库，远端为 fork 时建于 fork 仓库；无法判断或无远端时先询问用户），并在本地留档 `docs/requirement-issue/<仓库名>-<issue编号>-issue.md`；内容含背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界（做什么 / 不做什么）、待确认问题清单。
+- **关键行为**：先确认需求是否真实需要，再就尚不清楚的部分逐项提问确认；信息不足时不自行脑补需求；更新报告时只保留最新需求，不迁移过时内容。创建 Issue 与执行 git / gh 命令时，按需读取 `references/GitHub-CLI.md`、`references/GitHub-submit.md`。
 
 ### `dev-doc-writer` —— 开发文档
 
 - **职责**：把已确认的 Issue 转成可落地的开发文档与配套流程图。
 - **输入**：Issue 内容、代码库上下文。
-- **产出**：`docs/dev-docs/` 下的目录结构文档（`目录结构.md`）、开发文档（数据结构、函数定义，含公开属性与多线程属性）、配套流程图（状态流转、函数内运行流程）。
-- **关键行为**：先建立 / 确认目录结构文档，再与人类确认读写与只读工作区；默认私有公开属性；需求不涉及多线程时默认普通函数；设计终稿交由人类决定，人类设计能满足需求时优先采用。
+- **产出**：`docs/dev-docs/` 下的目录结构文档 `目录结构.md`（分两份，分别记录 docs 的迁移信息与本项目各工作区的职责）、开发文档（数据结构、函数定义，含公开属性与多线程属性）、配套流程图（状态流转、函数内运行流程）；设计修订的迁移记录另置于 `docs/migration-info/<序号>/`。
+- **关键行为**：先建立 / 确认两类目录结构文档，再与人类确认读写与只读工作区；默认私有公开属性；需求不涉及多线程时默认普通函数；设计终稿交由人类决定，人类设计能满足需求时优先采用；禁止在同一份文件中并存原设计与修改后设计，迁移记录只记新设计与原设计的差异。
 
 ### `task-planner` —— 任务拆分
 
@@ -62,7 +62,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 - **职责**：按任务清单逐项实现代码改动。
 - **输入**：开发文档与流程图（`docs/dev-docs/`）、任务清单（`docs/dev-docs/<序号>/`）、代码库。
 - **产出**：代码改动，并在达到验收标准后逐项标记任务完成。
-- **关键行为**：先读开发文档与流程图了解任务全貌，再按 `执行顺序.md` 给出的顺序逐项推进、不自行改序；只改任务声明的工作区；函数编写遵循函数设计规则，Rust 项目额外遵循 Rust 全局约束；严格按清单推进，不做清单之外的重构或「顺手改进」。
+- **关键行为**：先读开发文档与流程图了解任务全貌，再基于 `main` 创建任务分支、按 `执行顺序.md` 给出的顺序逐项推进（不自行改序）；执行子任务前先检查其工作区，为空则自行发挥，非空则按任务设计修正现有代码；只改任务声明的工作区；函数编写遵循函数设计规则，Rust 项目额外遵循 Rust 全局约束；每完成一项任务即提交一次 commit 并随即 push；严格按清单推进，不做清单之外的重构或「顺手改进」。执行 git / gh 命令时按需读取 `references/GitHub-CLI.md`、`references/GitHub-submit.md`。
 
 ### `tester` —— 测试验证
 
@@ -82,10 +82,14 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 
 ```
 .
+├── LICENSE
+├── README.md
 └── skills/
     ├── issue-writer/
     │   ├── SKILL.md
     │   └── references/
+    │       ├── GitHub-CLI.md
+    │       ├── GitHub-submit.md
     │       └── issue-template.md
     ├── dev-doc-writer/
     │   ├── SKILL.md
@@ -104,6 +108,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
     │   ├── SKILL.md
     │   └── references/
     │       ├── function-design-rules.md
+    │       ├── GitHub-CLI.md
+    │       ├── GitHub-submit.md
     │       └── rust-global-constraints.md
     ├── tester/
     │   └── SKILL.md
@@ -111,7 +117,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
         └── SKILL.md
 ```
 
-`issue-writer`、`dev-doc-writer`、`task-planner`、`implementer` 的正文已补充，`tester`、`pr-creator` 的 `SKILL.md` 当前仅包含元信息，正文待补充。
+`issue-writer`、`dev-doc-writer`、`task-planner`、`implementer` 的正文已补充；`tester`、`pr-creator` 的 `SKILL.md` 当前仅包含元信息，正文待补充。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer` 与 `implementer` 共用的参考文件。
 
 ## 快速开始
 
