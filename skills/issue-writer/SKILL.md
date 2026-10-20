@@ -41,6 +41,8 @@ description: 需求确认阶段：通过对话把模糊需求收敛为一份可�
 
 **参考模板**：本 Skill 附带一份 Issue 样例模板 `references/issue-template.md`。此处仅**显式声明其存在**；**仅在制作 Issue 时才读取该文件内容**并据其结构撰写，其余阶段不展开其正文。
 
+**参考命令与提交规范**：本 Skill 附带 `references/GitHub-CLI.md`（gh 命令参考，含 `gh issue create`）与 `references/GitHub-submit.md`（git 提交规范与 Git 安全约束）。此处仅**显式声明其存在**；**仅在创建 Issue、需要使用 gh 或 git 命令时才读取这些文件内容**，其余阶段不展开其正文。
+
 先判断项目远端仓库的类型，再决定 Issue 创建在哪个仓库：
 
 - 远端是**主仓库** → 在远端主仓库创建 Issue；
