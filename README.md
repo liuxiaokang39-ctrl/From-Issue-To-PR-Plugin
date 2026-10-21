@@ -4,7 +4,7 @@
 
 ## 项目简介
 
-本仓库是一个 **Skill 组仓库**，把软件开发中从需求到提交 PR 的完整链路拆成 6 个可独立调用、也可顺序串联的 Skill。每个 Skill 负责一个阶段，并明确各自的输入与产出物，因此既可以走完整流程，也可以只取用其中一环。
+本仓库是一个 **Skill 组仓库**，把软件开发中从需求到提交 PR 的完整链路拆成 7 个可独立调用、也可顺序串联的 Skill。每个 Skill 负责一个阶段，并明确各自的输入与产出物，因此既可以走完整流程，也可以只取用其中一环。
 
 它解决的问题：
 
@@ -19,8 +19,8 @@
 ## 工作流总览
 
 ```
-issue-writer → dev-doc-writer → task-planner → implementer → tester → pr-creator
-   需求确认       开发文档          任务拆分        编码实现      测试验证     提交 PR
+issue-writer → dev-doc-writer → task-planner → implementer → test-planner → test-runner → pr-creator
+   需求确认       开发文档          任务拆分        编码实现     测试流程与资源准备   按流程执行测试    提交 PR
 ```
 
 | 阶段 | Skill | 输入 | 产出物 |
@@ -29,7 +29,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 | 开发文档 | `dev-doc-writer` | Issue 内容、代码库上下文 | `docs/dev-docs/` 下的目录结构文档（docs 迁移信息 / 本项目工作区职责两份）、开发文档（数据结构、函数定义）、配套流程图，以及 `docs/migration-info/` 下的设计迁移记录 |
 | 任务拆分 | `task-planner` | 开发文档 | `docs/dev-docs/<序号>/` 下的任务文件（`<编号>-<任务>.md`）与执行顺序文件（`执行顺序.md`） |
 | 编码实现 | `implementer` | 开发文档与流程图、任务清单、代码库 | 逐项实现的代码改动 |
-| 测试验证 | `tester` | 开发文档、需求、任务报告、工作区代码 | `docs/test-process/<序号>/` 下三份测试流程文档（单元白盒、集成白盒、真实部署黑盒），设计层面无法通过时另产出 `docs/test-report/<序号>/测试报告.md` |
+| 测试流程与资源准备 | `test-planner` | 开发文档、需求、任务报告、工作区代码 | `docs/test-process/<序号>/` 下三份测试流程文档（单元白盒、集成白盒、真实部署黑盒），以及执行所需的测试框架、运行时、依赖、测试数据与外部服务等资源 |
+| 按流程执行测试 | `test-runner` | 三份测试流程文档、工作区代码 | 各场景的执行命令与结果记录；设计层面无法通过时产出 `docs/test-report/<序号>/测试报告.md` |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
 产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/目录结构.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/migration-info/<序号>/<序号>-<迁移内容概况>.md`、`docs/test-process/<开发文档序号>/1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`、`docs/test-report/<测试流程序号>/测试报告.md`；PR 描述随 PR 一并提交。
@@ -64,12 +65,19 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
 - **产出**：代码改动，并在达到验收标准后逐项标记任务完成。
 - **关键行为**：先读开发文档与流程图了解任务全貌，再基于 `main` 创建任务分支、按 `执行顺序.md` 给出的顺序逐项推进（不自行改序）；执行子任务前先检查其工作区，为空则自行发挥，非空则按任务设计修正现有代码；只改任务声明的工作区；函数编写遵循函数设计规则，Rust 项目额外遵循 Rust 全局约束；每完成一项任务即提交一次 commit 并随即 push；严格按清单推进，不做清单之外的重构或「顺手改进」。执行 git / gh 命令时按需读取 `references/GitHub-CLI.md`、`references/GitHub-submit.md`。
 
-### `tester` —— 测试验证
+### `test-planner` —— 测试流程与资源准备
 
-- **职责**：依据开发文档、需求与真实实现设计并执行三层测试，验证实现结果。
+- **职责**：依据开发文档、需求与真实实现设计三层测试并编写测试流程文档，同时准备执行测试所需的资源。
 - **输入**：开发文档与流程图、需求文档、任务报告（若有）、工作区代码。
-- **产出**：`docs/test-process/<序号>/` 下的三份测试流程文档（单元白盒、集成白盒、真实部署黑盒），以及设计层面无法通过时的 `docs/test-report/<序号>/测试报告.md`。
-- **关键行为**：白盒测试覆盖工作区全部代码，公有接口另做单元与集成黑盒测试；真实部署黑盒测试须先交人类审核；通过 shell 按序执行全部场景，禁止虚构结果与静默吞错；仅允许在入参校验缺失或返回值格式不符时修改代码，设计逻辑导致无法通过时只产出测试报告；测试与源码隔离且不修改函数公开属性。
+- **产出**：`docs/test-process/<序号>/` 下的三份测试流程文档（单元白盒、集成白盒、真实部署黑盒），以及已就绪的测试框架、运行时、依赖、测试数据与外部服务等资源清单。
+- **关键行为**：白盒测试覆盖工作区全部代码，公有接口另做单元与集成黑盒测试；真实部署黑盒测试须先交人类审核；逐项准备三份文档「测试所需外部资源」中的依赖，准备失败时提示人类；本阶段只设计与准备，不执行测试、不写入执行结果。
+
+### `test-runner` —— 按流程执行测试
+
+- **职责**：按既有测试流程文档执行三层测试，如实记录结果并处理失败。
+- **输入**：`docs/test-process/<序号>/` 下的三份测试流程文档、工作区代码。
+- **产出**：各场景的执行命令与结果记录；设计层面无法通过时产出 `docs/test-report/<序号>/测试报告.md`。
+- **关键行为**：通过 shell 按「单元白盒 → 集成白盒 → 真实部署黑盒」的顺序执行全部场景，禁止虚构结果与静默吞错；仅允许在入参校验缺失或返回值格式不符时修改代码，设计逻辑导致无法通过时只产出测试报告；测试与源码隔离且不修改函数公开属性；流程文档与实现不一致时回退到 `test-planner`，不擅自改期望结果。
 
 ### `pr-creator` —— 提交 PR
 
@@ -111,18 +119,20 @@ issue-writer → dev-doc-writer → task-planner → implementer → tester → 
     │       ├── GitHub-CLI.md
     │       ├── GitHub-submit.md
     │       └── rust-global-constraints.md
-    ├── tester/
+    ├── test-planner/
     │   ├── SKILL.md
     │   └── references/
     │       ├── visibility-attributes.md
     │       ├── unit-whitebox-test-process-template.md
     │       ├── integration-whitebox-test-process-template.md
     │       └── deployment-blackbox-test-process-template.md
+    ├── test-runner/
+    │   └── SKILL.md
     └── pr-creator/
         └── SKILL.md
 ```
 
-`issue-writer`、`dev-doc-writer`、`task-planner`、`implementer`、`tester` 的正文已补充；`pr-creator` 的 `SKILL.md` 当前仅包含元信息，正文待补充。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer` 与 `implementer` 共用的参考文件。
+`issue-writer`、`dev-doc-writer`、`task-planner`、`implementer`、`test-planner`、`test-runner` 的正文已补充；`pr-creator` 的 `SKILL.md` 当前仅包含元信息，正文待补充。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer` 与 `implementer` 共用的参考文件。
 
 ## 快速开始
 
