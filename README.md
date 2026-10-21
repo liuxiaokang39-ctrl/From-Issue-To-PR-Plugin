@@ -30,10 +30,10 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 | 任务拆分 | `task-planner` | 开发文档 | `docs/dev-docs/<序号>/` 下的任务文件（`<编号>-<任务>.md`）与执行顺序文件（`执行顺序.md`） |
 | 编码实现 | `implementer` | 开发文档与流程图、任务清单、代码库 | 逐项实现的代码改动 |
 | 测试流程与资源准备 | `test-planner` | 开发文档、需求、任务报告、工作区代码 | `docs/test-process/<序号>/` 下三份测试流程文档（单元白盒、集成白盒、真实部署黑盒），以及执行所需的测试框架、运行时、依赖、测试数据与外部服务等资源 |
-| 按流程执行测试 | `test-runner` | 三份测试流程文档、工作区代码 | 各场景的执行命令与结果记录；设计层面无法通过时产出 `docs/test-report/<序号>/测试报告.md` |
+| 按流程执行测试 | `test-runner` | 三份测试流程文档、工作区代码 | 各场景的执行命令与结果记录；通过时产出 `docs/test-report/<序号>/测试报告.md`，设计层面无法通过时产出 `docs/test-report/<序号>/failure-report/<序号>-测试未通过报告.md` |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
-产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/目录结构.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/migration-info/<序号>/<序号>-<迁移内容概况>.md`、`docs/test-process/<开发文档序号>/1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`、`docs/test-report/<测试流程序号>/测试报告.md`；PR 描述随 PR 一并提交。
+产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/目录结构.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/migration-info/<序号>/<序号>-<迁移内容概况>.md`、`docs/test-process/<开发文档序号>/1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`、`docs/test-report/<测试流程序号>/测试报告.md`、`docs/test-report/<测试流程序号>/failure-report/<序号>-测试未通过报告.md`；PR 描述随 PR 一并提交。
 
 ## Skill 清单
 
@@ -76,8 +76,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 
 - **职责**：按既有测试流程文档执行三层测试，如实记录结果并处理失败。
 - **输入**：`docs/test-process/<序号>/` 下的三份测试流程文档、工作区代码。
-- **产出**：各场景的执行命令与结果记录；设计层面无法通过时产出 `docs/test-report/<序号>/测试报告.md`。
-- **关键行为**：通过 shell 按「单元白盒 → 集成白盒 → 真实部署黑盒」的顺序执行全部场景，禁止虚构结果与静默吞错；仅允许在入参校验缺失或返回值格式不符时修改代码，设计逻辑导致无法通过时只产出测试报告；测试与源码隔离且不修改函数公开属性；流程文档与实现不一致时回退到 `test-planner`，不擅自改期望结果。
+- **产出**：各场景的执行命令与结果记录；通过时产出 `docs/test-report/<序号>/测试报告.md`，设计层面无法通过时产出 `docs/test-report/<序号>/failure-report/<序号>-测试未通过报告.md`。
+- **关键行为**：通过 shell 按「单元白盒 → 集成白盒 → 真实部署黑盒」的顺序执行全部场景，禁止虚构结果与静默吞错；仅允许在入参校验缺失或返回值格式不符时修改代码，设计逻辑导致无法通过时只产出失败报告；测试与源码隔离且不修改函数公开属性；流程文档与实现不一致时回退到 `test-planner`，不擅自改期望结果。
 
 ### `pr-creator` —— 提交 PR
 
@@ -127,7 +127,10 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │       ├── integration-whitebox-test-process-template.md
     │       └── deployment-blackbox-test-process-template.md
     ├── test-runner/
-    │   └── SKILL.md
+    │   ├── SKILL.md
+    │   └── references/
+    │       ├── test-pass-report-template.md
+    │       └── test-fail-report-template.md
     └── pr-creator/
         └── SKILL.md
 ```
