@@ -84,7 +84,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 - **职责**：把验证通过的改动整理为一份信息完整的 PR。
 - **输入**：代码改动、Issue、开发文档、测试报告。
 - **产出**：PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案）。
-- **关键行为**：PR 描述自包含——评审者无需回溯上下文即可理解改动理由。
+- **关键行为**：先确认待合并分支并判断远端类型，fork 仓库先同步上游 `main`；把待合并分支合入 `main` 后以草稿 PR 触发 CI，按 CI 报错最小修复至全部通过才转为可评审；修复若改变执行逻辑并与对应流程图冲突则暂停并告知人类；PR 标题与正文只取自 `docs/` 对应序号文件与真实 diff、测试记录，缺失信息先问人类；PR 描述自包含——评审者无需回溯上下文即可理解改动理由。执行 git / gh 命令时按需读取 `references/GitHub-CLI.md`、`references/GitHub-submit.md`。
 
 ## 目录结构
 
@@ -132,10 +132,13 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │       ├── test-pass-report-template.md
     │       └── test-fail-report-template.md
     └── pr-creator/
-        └── SKILL.md
+        ├── SKILL.md
+        └── references/
+            ├── GitHub-CLI.md
+            └── GitHub-submit.md
 ```
 
-`issue-writer`、`dev-doc-writer`、`task-planner`、`implementer`、`test-planner`、`test-runner` 的正文已补充；`pr-creator` 的 `SKILL.md` 当前仅包含元信息，正文待补充。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer` 与 `implementer` 共用的参考文件。
+7 个 Skill 的 `SKILL.md` 正文均已补充。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer`、`implementer`、`pr-creator` 各自附带的参考文件。
 
 ## 快速开始
 
