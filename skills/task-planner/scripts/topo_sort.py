@@ -8,8 +8,14 @@
     python topo_sort.py docs/dev-docs/001 -o docs/dev-docs/001/执行顺序.md
 
 输入为任务目录（扫描其中除「执行顺序.md」外的所有 .md 任务文件），
-或单个任务文件。每个任务文件需含 `编号：<编号>` 与 `依赖：<编号, 编号>` 两行，
-无依赖填 NONE；`任务：<标题>` 用于在执行顺序中显示。
+或单个任务文件。每个任务文件的最开头须为 JSON 头：
+
+    {
+      "编号": "001",
+      "依赖": ["002", "003"]
+    }
+
+无依赖时「依赖」填 `[]`；`任务：<标题>` 或文件中的首个一级标题用于在执行顺序中显示。
 
 输出：按拓扑序排列的执行顺序，形如 `1. 001 创建订单表及索引`。
 未指定 -o 时打印到标准输出；指定 -o 时写入该文件。
@@ -19,23 +25,49 @@
 from __future__ import annotations
 
 import glob
+import json
 import os
 import re
 import sys
 from graphlib import CycleError, TopologicalSorter
 
 _KEY = r"^\s*(?:[-*+]\s+)?(?:\*\*|`)?{key}(?:\*\*|`)?\s*[:：]\s*(.+?)\s*$"
-_ID_RE = re.compile(_KEY.format(key="(?:编号|id)"), re.IGNORECASE)
 _TITLE_RE = re.compile(_KEY.format(key="(?:任务|标题|title)"), re.IGNORECASE)
-_DEP_RE = re.compile(_KEY.format(key="(?:依赖|depends_on|depends)"), re.IGNORECASE)
-_HEADING_RE = re.compile(r"^#\s+(.+?)\s*$")
-_SEP_RE = re.compile(r"[,，、;；/\s]+")
-_NO_DEP = {"none", "null", "n/a", "-", "无", "空"}
+_HEADING_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
+_JSON_FENCE_RE = re.compile(r"^```(?:json)?[ \t]*\r?\n(.*?)\r?\n```[ \t]*(?:\r?\n|$)", re.DOTALL | re.IGNORECASE)
 _ORDER_FILENAME = "执行顺序.md"
+_ID_KEYS = ("编号", "id", "number")
+_DEP_KEYS = ("依赖", "depends_on", "depends", "dependencies")
 
 
 def _clean(value: str) -> str:
     return value.strip().strip("`").strip('"').strip("'").strip()
+
+
+def _metadata_value(metadata: dict, keys: tuple[str, ...], label: str):
+    normalized = {str(key).strip().lower(): value for key, value in metadata.items()}
+    for key in keys:
+        if key.lower() in normalized:
+            return normalized[key.lower()]
+    raise ValueError(f"JSON 头缺少「{label}」字段")
+
+
+def _parse_header(text: str) -> tuple[dict, str]:
+    """解析文件开头的 JSON 头，返回 (元数据, 正文)。"""
+    stripped = text.lstrip("\ufeff \t\r\n")
+    match = _JSON_FENCE_RE.match(stripped)
+    try:
+        if match:
+            metadata = json.loads(match.group(1))
+            body = stripped[match.end():]
+        else:
+            metadata, end = json.JSONDecoder().raw_decode(stripped)
+            body = stripped[end:]
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"文件开头的 JSON 头解析失败：{exc.msg}（第 {exc.lineno} 行第 {exc.colno} 列）") from exc
+    if not isinstance(metadata, dict):
+        raise ValueError("文件开头的 JSON 头必须是对象")
+    return metadata, body
 
 
 def parse_task_file(path: str) -> tuple[str, str, list[str]]:
@@ -43,31 +75,34 @@ def parse_task_file(path: str) -> tuple[str, str, list[str]]:
     with open(path, encoding="utf-8") as handle:
         text = handle.read()
 
-    number: str | None = None
-    title = ""
-    deps: list[str] = []
-    for line in text.splitlines():
-        if number is None:
-            match = _ID_RE.match(line)
-            if match:
-                number = _clean(match.group(1))
-                continue
-        match = _TITLE_RE.match(line)
-        if match and not title:
-            title = _clean(match.group(1))
-            continue
-        match = _DEP_RE.match(line)
-        if match:
-            deps = [
-                d
-                for d in (_clean(x) for x in _SEP_RE.split(_clean(match.group(1))))
-                if d and d.lower() not in _NO_DEP
-            ]
+    metadata, body = _parse_header(text)
 
-    if number is None:
-        raise ValueError(f"{path} 缺少「编号」行")
+    raw_number = _metadata_value(metadata, _ID_KEYS, "编号")
+    if raw_number is None or isinstance(raw_number, bool):
+        raise ValueError("「编号」必须是字符串")
+    number = _clean(str(raw_number))
+    if not number:
+        raise ValueError("「编号」不能为空")
+
+    raw_deps = _metadata_value(metadata, _DEP_KEYS, "依赖")
+    if not isinstance(raw_deps, list):
+        raise ValueError('「依赖」必须是数组，如 ["002", "003"]；无依赖填 []')
+    deps: list[str] = []
+    for item in raw_deps:
+        if not isinstance(item, str):
+            raise ValueError("「依赖」数组的元素必须是字符串编号")
+        dep = _clean(item)
+        if dep:
+            deps.append(dep)
+
+    title = ""
+    for line in body.splitlines():
+        match = _TITLE_RE.match(line)
+        if match:
+            title = _clean(match.group(1))
+            break
     if not title:
-        heading = _HEADING_RE.match(text.lstrip().splitlines()[0]) if text.strip() else None
+        heading = _HEADING_RE.search(body)
         title = _clean(heading.group(1)) if heading else ""
     return number, title, deps
 
