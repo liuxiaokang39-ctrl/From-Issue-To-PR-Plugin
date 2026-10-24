@@ -1,10 +1,10 @@
 # From Issue To PR Skill
 
-> 一套从「模糊需求」到「可合并 PR」的 Skill 工作流：确认需求 → 产出开发文档 → 拆分任务并实现 → 测试 → 提交 PR。
+> 一套从「模糊需求」到「可合并 PR」的 Skill 工作流：确认需求 → 产出开发文档 → 拆分任务并实现 → 测试 → 同步项目文档 → 提交 PR。
 
 ## 项目简介
 
-本仓库是一个 **Skill 组仓库**，把软件开发中从需求到提交 PR 的完整链路拆成 7 个可独立调用、也可顺序串联的 Skill。每个 Skill 负责一个阶段，并明确各自的输入与产出物，因此既可以走完整流程，也可以只取用其中一环。
+本仓库是一个 **Skill 组仓库**，把软件开发中从需求到提交 PR 的完整链路拆成 8 个可独立调用、也可顺序串联的 Skill（其中 `project-doc-sync` 目前为待定稿骨架）。每个 Skill 负责一个阶段，并明确各自的输入与产出物，因此既可以走完整流程，也可以只取用其中一环。
 
 它解决的问题：
 
@@ -14,13 +14,15 @@
 - 测试与验收标准不对齐，回归范围不明；
 - PR 描述缺少上下文，评审需要回溯大量背景。
 
-各阶段的产物默认统一落在使用者项目的 `docs/` 目录下，除非显式指定其他位置。
+各阶段的产物默认统一落在使用者项目的 `docs/` 目录下，除非显式指定其他位置；项目文档按其既有位置就地更新。
+
+> 架构总览（含状态流转流程图、两类文档的区分、回流路径）见 [docs/项目架构.md](docs/项目架构.md)。
 
 ## 工作流总览
 
 ```
-issue-writer → dev-doc-writer → task-planner → implementer → test-planner → test-runner → pr-creator
-   需求确认       开发文档          任务拆分        编码实现     测试流程与资源准备   按流程执行测试    提交 PR
+issue-writer → dev-doc-writer → task-planner → implementer → test-planner → test-runner → project-doc-sync → pr-creator
+   需求确认       开发文档          任务拆分        编码实现     测试流程与资源准备   按流程执行测试      同步项目文档      提交 PR
 ```
 
 | 阶段 | Skill | 输入 | 产出物 |
@@ -31,6 +33,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 | 编码实现 | `implementer` | 开发文档与流程图、任务清单、代码库 | 逐项实现的代码改动 |
 | 测试流程与资源准备 | `test-planner` | 开发文档、需求、任务报告、工作区代码 | `docs/test-process/<序号>/` 下三份测试流程文档（单元白盒、集成白盒、真实部署黑盒），以及执行所需的测试框架、运行时、依赖、测试数据与外部服务等资源 |
 | 按流程执行测试 | `test-runner` | 三份测试流程文档、工作区代码 | 各场景的执行命令与结果记录；通过时产出 `docs/test-report/<序号>/测试报告.md`，设计层面无法通过时产出 `docs/test-report/<序号>/failure-report/<序号>-测试未通过报告.md` |
+| 项目文档同步 | `project-doc-sync` | 测试通过的代码、现有项目文档 | 更新至项目当前状态的项目文档（README 等常驻文档，就地修改） |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
 产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/目录结构.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/migration-info/<序号>/<序号>-<迁移内容概况>.md`、`docs/test-process/<开发文档序号>/1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`、`docs/test-report/<测试流程序号>/测试报告.md`、`docs/test-report/<测试流程序号>/failure-report/<序号>-测试未通过报告.md`；PR 描述随 PR 一并提交。
@@ -79,6 +82,16 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 - **产出**：各场景的执行命令与结果记录；通过时产出 `docs/test-report/<序号>/测试报告.md`，设计层面无法通过时产出 `docs/test-report/<序号>/failure-report/<序号>-测试未通过报告.md`。
 - **关键行为**：通过 shell 按「单元白盒 → 集成白盒 → 真实部署黑盒」的顺序执行全部场景，禁止虚构结果与静默吞错；仅允许在入参校验缺失或返回值格式不符时修改代码，设计逻辑导致无法通过时只产出失败报告；测试与源码隔离且不修改函数公开属性；流程文档与实现不一致时回退到 `test-planner`，不擅自改期望结果。
 
+### `project-doc-sync` —— 项目文档同步
+
+- **职责**：在测试通过后，把项目文档同步到项目当前最新状态，使其与真实代码一致。
+- **输入**：测试通过的代码与 diff、测试报告、现有项目文档。
+- **产出**：就地更新后的项目文档（如 `README.md`、`docs/` 下的常驻说明），不新建副本。
+- **关键行为**：只同步经测试验证的代码；以真实实现为准，不凭开发文档推断现状；只修改过期内容，不做无关重写；不修改开发文档与流程图。
+- **状态**：骨架，工作流程与产物细则待定稿。
+
+> 项目文档描述项目当前状态，长期维护；开发文档（`docs/dev-docs/`）指导某一次开发，具有时效性，是本次开发的迁移文档。两者不可混用。
+
 ### `pr-creator` —— 提交 PR
 
 - **职责**：把验证通过的改动整理为一份信息完整的 PR。
@@ -93,7 +106,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 ├── LICENSE
 ├── README.md
 ├── docs/
-│   └── 开发规范.md
+│   ├── 开发规范.md
+│   └── 项目架构.md
 └── skills/
     ├── issue-writer/
     │   ├── SKILL.md
@@ -138,6 +152,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │   └── assets/
     │       ├── test-pass-report-template.md
     │       └── test-fail-report-template.md
+    ├── project-doc-sync/
+    │   └── SKILL.md
     └── pr-creator/
         ├── SKILL.md
         └── references/
@@ -145,7 +161,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
             └── GitHub-submit.md
 ```
 
-7 个 Skill 的 `SKILL.md` 正文均已补充。各 Skill 按 [docs/开发规范.md](docs/开发规范.md) 组织工作区：`references/` 存放规范、命令参考与决策表，`assets/` 存放模板与样例，`scripts/` 存放确定性脚本。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer`、`implementer`、`pr-creator` 各自附带的参考文件。
+7 个已实现 Skill 的 `SKILL.md` 正文均已补充；`project-doc-sync` 目前仅有骨架，工作流程与产物细则待定稿。各 Skill 按 [docs/开发规范.md](docs/开发规范.md) 组织工作区：`references/` 存放规范、命令参考与决策表，`assets/` 存放模板与样例，`scripts/` 存放确定性脚本。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer`、`implementer`、`pr-creator` 各自附带的参考文件。
 
 ## 快速开始
 
