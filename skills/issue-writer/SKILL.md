@@ -39,7 +39,7 @@ description: 需求确认阶段：通过对话把模糊需求收敛为一份可�
 
 ### 5. 创建 Issue 并本地留档
 
-**参考模板**：本 Skill 附带一份 Issue 样例模板 `references/issue-template.md`。此处仅**显式声明其存在**；**仅在制作 Issue 时才读取该文件内容**并据其结构撰写，其余阶段不展开其正文。
+**参考模板**：本 Skill 附带一份 Issue 样例模板 `assets/issue-template.md`。此处仅**显式声明其存在**；**仅在制作 Issue 时才读取该文件内容**并据其结构撰写，其余阶段不展开其正文。
 
 **参考命令与提交规范**：本 Skill 附带 `references/GitHub-CLI.md`（gh 命令参考，含 `gh issue create`）与 `references/GitHub-submit.md`（git 提交规范与 Git 安全约束）。此处仅**显式声明其存在**；**仅在创建 Issue、需要使用 gh 或 git 命令时才读取这些文件内容**，其余阶段不展开其正文。
 

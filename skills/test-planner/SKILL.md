@@ -57,9 +57,9 @@ description: 测试流程编写与资源准备：依据开发文档、需求与�
 
 **参考模板**：本 Skill 附带三份样板草稿：
 
-- `references/unit-whitebox-test-process-template.md`
-- `references/integration-whitebox-test-process-template.md`
-- `references/deployment-blackbox-test-process-template.md`
+- `assets/unit-whitebox-test-process-template.md`
+- `assets/integration-whitebox-test-process-template.md`
+- `assets/deployment-blackbox-test-process-template.md`
 
 此处仅**显式声明其存在**；**仅在生成对应测试文档时才读取对应模板**，其余阶段不展开其正文。
 

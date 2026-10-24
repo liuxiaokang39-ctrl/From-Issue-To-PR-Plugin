@@ -57,7 +57,7 @@ description: 开发文档阶段：先建立或确认 docs/dev-docs 下的「目�
 
 依据上文结论与和人类的对话制作开发文档。
 
-**参考模板与规则**：本 Skill 附带 `references/dev-doc-template.md`（文档模板）与 `references/function-design-rules.md`（函数必含内容、公有接口设计规范、校验规则）。此处仅**显式声明其存在**；**仅在制作开发文档时才读取这些文件内容**，其余阶段不展开其正文。
+**参考模板与规则**：本 Skill 附带 `assets/dev-doc-template.md`（文档模板）与 `references/function-design-rules.md`（函数必含内容、公有接口设计规范、校验规则）。此处仅**显式声明其存在**；**仅在制作开发文档时才读取这些文件内容**，其余阶段不展开其正文。
 
 **调用关系规则**：本 Skill 附带 `references/call-relationship-rules.md`（同模块 / 跨模块的方法调用方式与依赖注入约束）。此处仅**显式声明其存在**；**仅在设计函数间的调用关系时才读取该文件内容**，其余阶段不展开其正文。
 
@@ -68,7 +68,7 @@ description: 开发文档阶段：先建立或确认 docs/dev-docs 下的「目�
 
 依据生成的开发文档制作配套流程图。
 
-**参考模板**：本 Skill 附带 `references/flowchart-template.md`。此处仅**显式声明其存在**；**仅在制作流程图时才读取该文件内容**，其余阶段不展开其正文。
+**参考模板**：本 Skill 附带 `assets/flowchart-template.md`。此处仅**显式声明其存在**；**仅在制作流程图时才读取该文件内容**，其余阶段不展开其正文。
 
 - 目录：`docs/dev-docs/`
 - 命名：`<序号>-<标题>流程图.md`，序号与该流程图所依赖的开发文档一致。

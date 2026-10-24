@@ -92,23 +92,28 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 .
 ├── LICENSE
 ├── README.md
+├── docs/
+│   └── 开发规范.md
 └── skills/
     ├── issue-writer/
     │   ├── SKILL.md
+    │   ├── assets/
+    │   │   └── issue-template.md
     │   └── references/
     │       ├── GitHub-CLI.md
-    │       ├── GitHub-submit.md
-    │       └── issue-template.md
+    │       └── GitHub-submit.md
     ├── dev-doc-writer/
     │   ├── SKILL.md
+    │   ├── assets/
+    │   │   ├── dev-doc-template.md
+    │   │   └── flowchart-template.md
     │   └── references/
     │       ├── visibility-attributes.md
     │       ├── function-design-rules.md
-    │       ├── dev-doc-template.md
-    │       └── flowchart-template.md
+    │       └── call-relationship-rules.md
     ├── task-planner/
     │   ├── SKILL.md
-    │   ├── references/
+    │   ├── assets/
     │   │   └── task-template.md
     │   └── scripts/
     │       └── topo_sort.py
@@ -116,19 +121,21 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │   ├── SKILL.md
     │   └── references/
     │       ├── function-design-rules.md
+    │       ├── call-relationship-rules.md
     │       ├── GitHub-CLI.md
     │       ├── GitHub-submit.md
     │       └── rust-global-constraints.md
     ├── test-planner/
     │   ├── SKILL.md
+    │   ├── assets/
+    │   │   ├── unit-whitebox-test-process-template.md
+    │   │   ├── integration-whitebox-test-process-template.md
+    │   │   └── deployment-blackbox-test-process-template.md
     │   └── references/
-    │       ├── visibility-attributes.md
-    │       ├── unit-whitebox-test-process-template.md
-    │       ├── integration-whitebox-test-process-template.md
-    │       └── deployment-blackbox-test-process-template.md
+    │       └── visibility-attributes.md
     ├── test-runner/
     │   ├── SKILL.md
-    │   └── references/
+    │   └── assets/
     │       ├── test-pass-report-template.md
     │       └── test-fail-report-template.md
     └── pr-creator/
@@ -138,7 +145,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
             └── GitHub-submit.md
 ```
 
-7 个 Skill 的 `SKILL.md` 正文均已补充。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer`、`implementer`、`pr-creator` 各自附带的参考文件。
+7 个 Skill 的 `SKILL.md` 正文均已补充。各 Skill 按 [docs/开发规范.md](docs/开发规范.md) 组织工作区：`references/` 存放规范、命令参考与决策表，`assets/` 存放模板与样例，`scripts/` 存放确定性脚本。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer`、`implementer`、`pr-creator` 各自附带的参考文件。
 
 ## 快速开始
 
