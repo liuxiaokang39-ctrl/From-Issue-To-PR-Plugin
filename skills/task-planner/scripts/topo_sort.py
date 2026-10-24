@@ -5,7 +5,7 @@
     python topo_sort.py <任务目录或任务文件> [-o 输出文件]
 
 示例：
-    python topo_sort.py docs/dev-docs/001 -o docs/dev-docs/001/执行顺序.md
+    python topo_sort.py docs/dev-docs/001/task-list -o docs/dev-docs/001/task-list/执行顺序.md
 
 输入为任务目录（扫描其中除「执行顺序.md」外的所有 .md 任务文件），
 或单个任务文件。每个任务文件的最开头须为 JSON 头：

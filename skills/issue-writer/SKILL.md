@@ -51,7 +51,7 @@ description: 需求确认阶段：通过对话把模糊需求收敛为一份可�
 
 用 `gh issue create` 创建 Issue。无论哪种情况，都在本地留档：
 
-- 目录：`docs/requirement-issue/`
+- 目录：`docs/dev-docs/<开发序号>/`（`<开发序号>` 为本次开发的序号，由用户确认）；
 - 文件名：`<仓库名>-<issue编号>-issue.md`（仓库名取实际创建 Issue 的仓库名，如 `From-Issue-To-PR-Skill-12-issue.md`）
 
 ## 约束
