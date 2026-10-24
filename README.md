@@ -38,6 +38,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 
 产物建议命名：`docs/requirement-issue/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/目录结构.md`、`docs/dev-docs/<序号>-<标题>开发文档.md` 与 `docs/dev-docs/<序号>-<标题>流程图.md`、`docs/dev-docs/<序号>/<编号>-<任务>.md` 与 `docs/dev-docs/<序号>/执行顺序.md`、`docs/migration-info/<序号>/<序号>-<迁移内容概况>.md`、`docs/test-process/<开发文档序号>/1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`、`docs/test-report/<测试流程序号>/测试报告.md`、`docs/test-report/<测试流程序号>/failure-report/<序号>-测试未通过报告.md`；PR 描述随 PR 一并提交。
 
+**设计错误判定**：如果根据已批准的状态流转图设计的代码并不能完成需求，视为设计错误，须回到开发文档阶段重新设计；非设计错误（如边界条件、参数校验、状态判断疏漏）则直接修改代码。详见 [docs/项目架构.md](docs/项目架构.md)。
+
 ## Skill 清单
 
 ### `issue-writer` —— 需求确认
