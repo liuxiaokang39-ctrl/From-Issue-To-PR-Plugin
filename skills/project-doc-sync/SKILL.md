@@ -31,6 +31,7 @@ description: 项目文档同步阶段（本版本仅支持 Rust）：在测试�
 6. **奥卡姆剃刀**：只更新与本次改动相关的过期内容，不做无关重写。
 7. **文档格式固定**：输出固定为 Rustdoc Markdown，章节依次为 `///`、`# Arguments`、`# Returns`、`# Errors`、`# Examples`。
 8. **只覆盖公有 API**：只为公有函数生成 / 更新 `///` 文档；私有函数不是本 Skill 的同步对象。
+9. **依赖缺失先补齐**：执行本 Skill 的脚本或校验命令时，如果因依赖缺失（Python 解释器、Rust nightly 工具链、`rust-script`、Python 包等）无法运行，先自行安装 / 补齐依赖并重试，补齐后继续原流程；不得因为缺依赖就跳过步骤，也不得改用其他来源替代可信底座。确实无法安装时，才停止并说明缺失项、安装命令与受影响的步骤。
 
 ## 三层职责
 
@@ -53,9 +54,9 @@ bash scripts/extract_rustdoc_json.sh -p <crate名> --manifest-path <Cargo.toml�
 ```
 
 - 产物：`target/rust-fn-doc/<crate名>.json`（即 rustdoc JSON）。
-- rustdoc JSON 需要 nightly 工具链；脚本会检查 `rustup` 与 `nightly` 是否可用，缺失时直接报错并给出安装命令，不降级改用其他来源。
+- rustdoc JSON 需要 nightly 工具链；脚本会检查 `rustup` 与 `nightly` 是否可用，缺失时报错并给出安装命令。按必要前提 9，先补齐 nightly 依赖并重跑脚本，不得降级改用其他来源。
 - 记录 JSON 的 `format_version`。rustdoc JSON 格式随 nightly 变动，更换工具链后必须重新生成，不得混用不同版本的 JSON。
-- 生成失败（编译错误、无 nightly）时停止本阶段并告知人类；不得改用 AST 签名冒充可信底座。
+- 依赖补齐后仍生成失败（编译错误、目标 crate 不可构建）时停止本阶段并告知人类；不得改用 AST 签名冒充可信底座。
 
 ### 2. 生成可读骨架（可选）
 
@@ -65,7 +66,7 @@ bash scripts/extract_rustdoc_json.sh -p <crate名> --manifest-path <Cargo.toml�
 rustdoc-json-to-markdown target/rust-fn-doc/<crate名>.json -o target/rust-fn-doc/skeleton-from-rustdoc.md
 ```
 
-- 这两个工具为可选外部依赖，安装方式与参数以工具自身文档为准；未安装时跳过本步骤即可，不阻塞流程。
+- 这两个工具为可选外部依赖。决定使用但尚未安装时，按必要前提 9 先安装（如 `cargo install`）再执行；不使用本步骤时直接跳过，不阻塞流程。
 - 骨架只用于阅读，**不是事实来源**：骨架与 JSON 不一致时，一律以 rustdoc JSON 为准。
 
 ### 3. AST 补全：syn 解析源码
@@ -78,7 +79,7 @@ rust-script scripts/ast_inspect.rs --src src --crate-root src/lib.rs -o target/r
 
 - 提取内容：函数签名（token 形式）、函数体分支（`if` / `match`）、错误分支（`?`、`Err(...)`、`return Err(...)`）、panic 类调用（`panic!`、`unwrap`、`expect`、断言宏等）、调用关系、源码中的原始 doc 行。
 - AST 结果只补事实：它能说明「源码在这里返回了错误」，不能说明「这个错误意味着什么」。后者必须来自 doc 注释或由人类确认。
-- 无 `rust-script` 时按 `scripts/ast_inspect.rs` 头部注释的 Cargo 依赖自行构建后运行，产物格式不变。
+- 无 `rust-script` 时按必要前提 9 先安装 `rust-script`，或按 `scripts/ast_inspect.rs` 头部注释的 Cargo 依赖自行构建后运行，产物格式不变。
 
 ### 4. 合成为固定格式的 Rustdoc Markdown
 
@@ -90,6 +91,8 @@ python3 scripts/generate_fn_docs.py \
   --ast target/rust-fn-doc/ast.json \
   -o target/rust-fn-doc/facts
 ```
+
+- 缺少 `python3`（需 Python 3.9+）时按必要前提 9 先安装解释器再重跑本步骤，不得跳过合并直接由 LLM 凭印象生成文档。
 
 脚本产出：
 
