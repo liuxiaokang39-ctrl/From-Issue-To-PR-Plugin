@@ -1,13 +1,13 @@
 ---
 name: project-doc-sync
-description: 项目文档同步阶段：在测试通过后，依据真实代码与现有项目文档，把项目文档同步到项目当前最新状态。项目文档记录项目现状，与具有时效性、随开发迁移而失效的开发文档（docs/dev-docs）相互独立。
+description: 项目文档同步阶段（本版本仅支持 Rust）：在测试通过后，以 rustdoc JSON 为可信底座、syn AST 补全缺失信息，按固定 Rustdoc Markdown 格式自动更新函数文档，并给出未确认字段清单，不臆造任何事实。
 ---
 
 # project-doc-sync
 
 把测试通过后的真实代码同步回「项目文档」，使项目文档始终描述项目当前状态。
 
-> 状态：骨架，工作流程与产物细则待补充定稿。
+> 适用范围：本版本只处理 Rust 项目；其他语言暂不支持。Rust 文档以源码 `///` 文档注释为落地形式，必要时同步 `README.md` 等常驻说明。
 
 ## 职责边界
 
@@ -15,45 +15,162 @@ description: 项目文档同步阶段：在测试通过后，依据真实代码�
 
 | 文档类型 | 定位 | 生命周期 | 典型位置 |
 | --- | --- | --- | --- |
-| 项目文档 | 描述项目**当前最新状态** | 长期维护，随代码演进持续更新 | `README.md`、`docs/` 下的常驻说明 |
+| 项目文档 | 描述项目**当前最新状态** | 长期维护，随代码演进持续更新 | `README.md`、`docs/` 下的常驻说明、源码 `///` 文档注释 |
 | 开发文档 | 指导**某一次开发**的设计与实现 | 有明确时效性，是本次开发的迁移文档 | `docs/dev-docs/` |
 
 - 本 Skill 只负责项目文档；开发文档及其流程图由 `dev-doc-writer` 负责，不在本 Skill 的同步范围内。
+- 函数文档一律以 Rustdoc Markdown（`///`）写入源码，不另建 API 文档副本。
 
 ## 必要前提
 
 1. **只同步已验证代码**：仅同步经 `test-runner` 测试通过的代码，未验证的实现不回写项目文档。
-2. **以代码为准**：项目文档必须与真实实现一致，不得沿用过期描述，也不得凭开发文档推断现状。
-3. **奥卡姆剃刀**：只更新与本次改动相关的过期内容，不做无关重写。
+2. **可信底座唯一**：函数签名、可见性、参数与返回值类型、doc 注释只以 rustdoc JSON 为准；AST 只用于补全 rustdoc 无法表达的事实（函数体结构、错误分支、调用关系）。
+3. **LLM 只做合成**：LLM 负责组织语言与排版，不负责产生事实。参数含义、错误码、返回值语义、示例行为必须能在 rustdoc JSON 或 AST 结果中找到依据。
+4. **不臆造**：不得推断或编造参数含义、错误码、返回值语义、示例运行结果；无法证实的内容必须标注为未确认。
+5. **以代码为准**：项目文档必须与真实实现一致，不得沿用过期描述，也不得凭开发文档推断现状。
+6. **奥卡姆剃刀**：只更新与本次改动相关的过期内容，不做无关重写。
+7. **文档格式固定**：输出固定为 Rustdoc Markdown，章节依次为 `///`、`# Arguments`、`# Returns`、`# Errors`、`# Examples`。
+8. **只覆盖公有 API**：只为公有函数生成 / 更新 `///` 文档；私有函数不是本 Skill 的同步对象。
+
+## 三层职责
+
+| 层 | 职责 | 实现方式 |
+| --- | --- | --- |
+| 1. 结构化提取 | 获取函数签名、参数、返回值、可见性、doc 注释 | rustdoc JSON（`scripts/extract_rustdoc_json.sh`）+ `rustdoc-json-to-markdown` / `rustdoc-llms` 生成可读骨架 |
+| 2. AST 补全 | 解析源码，提取函数体结构、错误分支、调用关系 | `syn` + `quote`（`scripts/ast_inspect.rs`）；必要时改用 `ra_ap_syntax` / `workspacer-syntax` |
+| 3. 文档合成 | 生成 `///` 注释与相关项目说明 | LLM 仅依据 JSON + AST 事实合成 Markdown |
 
 ## 工作流程
 
-### 1. 读取输入
+### 1. 获取可信底座：rustdoc JSON
 
-- 本次改动涉及的代码与 diff；
-- 测试报告；
-- 现有项目文档。
+先确认待同步的 crate、`Cargo.toml` 与测试报告，再生成 rustdoc JSON。
 
-### 2. 定位过期内容
+**脚本**：本 Skill 附带 `scripts/extract_rustdoc_json.sh`，负责探测工具链、调用 rustdoc 并归档 JSON：
 
-逐个判断现有项目文档中因本次改动而过期的部分（目录结构、模块职责、接口说明、使用方式、配置项等）。
+```bash
+bash scripts/extract_rustdoc_json.sh -p <crate名> --manifest-path <Cargo.toml路径> -o target/rust-fn-doc
+```
 
-### 3. 同步项目文档
+- 产物：`target/rust-fn-doc/<crate名>.json`（即 rustdoc JSON）。
+- rustdoc JSON 需要 nightly 工具链；脚本会检查 `rustup` 与 `nightly` 是否可用，缺失时直接报错并给出安装命令，不降级改用其他来源。
+- 记录 JSON 的 `format_version`。rustdoc JSON 格式随 nightly 变动，更换工具链后必须重新生成，不得混用不同版本的 JSON。
+- 生成失败（编译错误、无 nightly）时停止本阶段并告知人类；不得改用 AST 签名冒充可信底座。
 
-- 只修改过期内容，保持原文结构与风格；
-- 不把开发文档中有时效性的设计迁移信息写入项目文档。
+### 2. 生成可读骨架（可选）
 
-### 4. 校验与汇报
+用 `rustdoc-json-to-markdown` 或 `rustdoc-llms` 把 JSON 转成可读骨架，便于人工快速浏览 API 全貌：
 
-- 核对更新后的项目文档与真实代码一致；
-- 汇报修改的文件、位置与原因。
+```bash
+rustdoc-json-to-markdown target/rust-fn-doc/<crate名>.json -o target/rust-fn-doc/skeleton-from-rustdoc.md
+```
+
+- 这两个工具为可选外部依赖，安装方式与参数以工具自身文档为准；未安装时跳过本步骤即可，不阻塞流程。
+- 骨架只用于阅读，**不是事实来源**：骨架与 JSON 不一致时，一律以 rustdoc JSON 为准。
+
+### 3. AST 补全：syn 解析源码
+
+用 syn 解析源码，补全 rustdoc JSON 拿不到的事实：
+
+```bash
+rust-script scripts/ast_inspect.rs --src src --crate-root src/lib.rs -o target/rust-fn-doc/ast.json
+```
+
+- 提取内容：函数签名（token 形式）、函数体分支（`if` / `match`）、错误分支（`?`、`Err(...)`、`return Err(...)`）、panic 类调用（`panic!`、`unwrap`、`expect`、断言宏等）、调用关系、源码中的原始 doc 行。
+- AST 结果只补事实：它能说明「源码在这里返回了错误」，不能说明「这个错误意味着什么」。后者必须来自 doc 注释或由人类确认。
+- 无 `rust-script` 时按 `scripts/ast_inspect.rs` 头部注释的 Cargo 依赖自行构建后运行，产物格式不变。
+
+### 4. 合成为固定格式的 Rustdoc Markdown
+
+先用脚本把「事实」合并成 LLM 可用的输入，再由 LLM 只做合成：
+
+```bash
+python3 scripts/generate_fn_docs.py \
+  --rustdoc target/rust-fn-doc/<crate名>.json \
+  --ast target/rust-fn-doc/ast.json \
+  -o target/rust-fn-doc/facts
+```
+
+脚本产出：
+
+| 文件 | 用途 |
+| --- | --- |
+| `facts.md` | 逐函数的事实包：签名、可见性、参数类型、返回值、doc 原文、错误分支、调用关系 |
+| `skeleton.md` | 固定格式的 `///` 骨架，缺失事实处预置 `<!-- 未确认：... -->` |
+| `未确认字段清单.md` | 无法从输入证实、需要人类确认的字段列表 |
+
+**参考模板**：本 Skill 附带 `assets/fn_doc.md`（固定格式、章节规则与未确认标注约定）。此处仅**显式声明其存在**；**仅在本步骤才读取该文件内容**，其余阶段不展开其正文。
+
+合成规则：
+
+- **允许**：组织语句、合并同义事实、按模板排版、从 doc 原文提炼摘要。
+- **禁止**：新增参数含义、错误码、返回值语义、示例输出；改写签名或类型；把「未确认」写成确定事实。
+- **章节取舍**：有参数才写 `# Arguments`；返回值非 `()` 才写 `# Returns`；返回 `Result` 才写 `# Errors`；`# Examples` 只在能给出可对应真实签名的示例时写入。
+- **未确认处理**：无法证实的内容保留 `<!-- 未确认：... -->` 标记，并登记到清单。定稿前必须消除这些标记（确认或删除该表述），不得把占位标记留在源码中。
+- **改动范围**：只修改公有函数的 `///` 注释以及受本次改动影响的项目说明；不修改代码逻辑、签名、可见性、测试。
+
+### 5. 校验覆盖率与一致性
+
+```bash
+bash evals/verify_doc_coverage.sh \
+  --rustdoc target/rust-fn-doc/<crate名>.json \
+  --ast target/rust-fn-doc/ast.json
+```
+
+校验项：
+
+- 每个公有函数都有非空文档摘要；
+- 有参数时存在 `# Arguments`，且每个参数都被说明；
+- 返回值非 `()` 时存在 `# Returns`；
+- 返回 `Result` 时存在 `# Errors`；
+- 源码 doc 与 rustdoc JSON 的 `docs` 一致（不一致说明 JSON 已过期，必须重新生成）；
+- 源码中不残留 `未确认` 占位标记；
+- `# Examples` 缺失按警告提示，不计为失败。
+
+任一项失败必须修复后重跑，不得跳过。必要时补充执行 `cargo test --doc` 与 `cargo doc --no-deps` 验证示例与文档可构建。
+
+### 6. 汇报
+
+汇报中必须包含：
+
+1. 修改的文件与位置；
+2. 覆盖率校验结论；
+3. **未确认字段清单**（表格：函数 | 字段 | 原因 | 需人类确认的内容 | 位置）；
+4. 跳过的步骤与原因（如未安装 rustdoc-json-to-markdown）。
+
+清单默认只在回复中给出，不写入项目文档；人类要求留档时再写入指定位置。
+
+## 未确认字段清单
+
+清单只收录「无法从 rustdoc JSON 或 AST 证实」的内容，典型来源：
+
+- 参数含义缺失或 doc 未逐个说明参数；
+- 返回值语义未说明；
+- 返回 `Result` 但无 `# Errors`，仅能从 AST 看到错误分支位置；
+- `# Examples` 缺失，或示例无法验证；
+- rustdoc JSON 与 AST 的签名 / doc 不一致（需重新提取）；
+- 类型渲染失败（复杂泛型、`impl Trait` 等），只能从 AST 或源码确认。
 
 ## 产物
 
-- 更新后的项目文档（就地修改，不新建副本）。
+- 就地更新的源码 `///` 文档注释与相关项目说明（不新建副本）。
+- `target/rust-fn-doc/` 下的中间产物：rustdoc JSON、AST JSON、事实包、骨架、未确认字段清单（均为工作区临时产物，不提交）。
+
+## 脚本与资源
+
+| 路径 | 职责 |
+| --- | --- |
+| `scripts/extract_rustdoc_json.sh` | 探测 nightly、生成并归档 rustdoc JSON |
+| `scripts/ast_inspect.rs` | 用 syn 提取函数体结构、错误分支、调用关系与源码 doc |
+| `scripts/generate_fn_docs.py` | 合并事实包、生成固定格式骨架与未确认字段清单、执行覆盖率校验 |
+| `assets/fn_doc.md` | Rustdoc Markdown 固定格式与未确认标注约定 |
+| `evals/verify_doc_coverage.sh` | 覆盖率与一致性校验入口，内部调用 `generate_fn_docs.py --verify` |
 
 ## 约束
 
 - 不修改开发文档与流程图（由 `dev-doc-writer` 负责）。
 - 不同步未通过测试的代码。
-- 未经人类确认的文档口径不得写成已确认。
+- 优先使用 rustdoc JSON 中的签名与 doc 注释；缺失信息才用 AST 提取结果补充。
+- 不允许臆造参数含义、错误码、返回值语义；未确认项一律显式标注，不得写成已确认。
+- 输出格式固定为 Rustdoc Markdown：`///`、`# Arguments`、`# Returns`、`# Errors`、`# Examples`。
+- 本版本只支持 Rust；其他语言的文档同步不在本 Skill 范围内。
