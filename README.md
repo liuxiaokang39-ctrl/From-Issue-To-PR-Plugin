@@ -32,7 +32,7 @@ Windows 下 hooks 以 `python` 调用脚本；若环境只有 `python3`，需同
 
 本仓库根目录即插件根，插件清单为 [plugin.json](plugin.json)。不同工具的插件清单与加载命令不同，按目标工具使用对应的安装文档：
 
-| 目标工具 | 插件版本位置 | 安装文档 |
+| 目标工具 | 版本分支 | 安装文档 |
 | --- | --- | --- |
 | Claude Code | `beta/claude-code-plugin-0.1.0` 分支（`.claude-plugin/` 清单） | [docs/install/claude-code.md](docs/install/claude-code.md) |
 | Codex | `beta/codex-plugin-0.1.0` 分支（`.codex-plugin/` 清单） | [docs/install/codex.md](docs/install/codex.md) |

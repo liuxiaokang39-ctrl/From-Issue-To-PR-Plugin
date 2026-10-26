@@ -33,15 +33,8 @@ claude plugin install from-issue-to-pr@from-issue-to-pr
 
 ### 从 GitHub 安装
 
-当前 Claude Code 版本位于 `beta/claude-code-plugin-0.1.0` 分支。该版本合入默认分支后，
-可直接用仓库地址安装：
-
-```powershell
-claude plugin marketplace add liuxiaokang39-ctrl/From-Issue-To-PR-Skill
-claude plugin install from-issue-to-pr@from-issue-to-pr
-```
-
-在合入默认分支之前，请使用上面的本地目录安装方式。
+Claude Code 版本位于 `beta/claude-code-plugin-0.1.0` 分支；`main` 分支只保留安装文档，不含
+`.claude-plugin/` 清单。从 GitHub 安装时先获取该分支的仓库副本，再按上一节从本地目录安装。
 
 ## 重启与加载
 
