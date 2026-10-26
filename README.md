@@ -30,14 +30,9 @@ Windows 下 hooks 以 `python` 调用脚本；若环境只有 `python3`，需同
 
 ### 安装方式
 
-本仓库根目录即插件根，插件清单为 [plugin.json](plugin.json)。不同工具的插件清单与加载命令不同，按目标工具使用对应的安装文档：
+本插件当前仅支持 Codex。`main` 分支是 Codex 的最新开发分支，`beta/codex-plugin-0.1.0` 是插件的版本分支。
 
-| 目标工具 | 版本分支 | 安装文档 |
-| --- | --- | --- |
-| Claude Code | `beta/claude-code-plugin-0.1.0` 分支（`.claude-plugin/` 清单） | [docs/install/claude-code.md](docs/install/claude-code.md) |
-| Codex | `beta/codex-plugin-0.1.0` 分支（`.codex-plugin/` 清单） | [docs/install/codex.md](docs/install/codex.md) |
-
-安装对应版本的插件时使用对应的安装文档；安装命令、重启加载、Hook 信任与冒烟测试均见文档正文。
+安装与加载步骤、Hook 信任与冒烟测试见 [docs/install/codex.md](docs/install/codex.md)。
 
 ## 使用
 
@@ -131,7 +126,6 @@ python skills/project-doc-sync/evals/verify_doc_coverage.sh \
     ├── 开发规范.md
     ├── 项目架构.md
     └── install/
-        ├── claude-code.md
         └── codex.md
 ```
 

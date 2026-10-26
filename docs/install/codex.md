@@ -98,5 +98,4 @@ Codex 中没有 `/from-issue-to-pr:workflow` 命令。走完整流程时，让 C
 - Hook 只覆盖 Codex 的 `Bash`（`exec_command`）与 `apply_patch`；通过其他工具或脚本
   写文件时不会触发产物校验。
 - 插件不改变 Codex 的沙箱与审批设置，也不替代 Codex 自身的权限确认。
-- Codex 版本位于 `beta/codex-plugin-0.1.0` 分支；Claude Code 版本安装见
-  [claude-code.md](claude-code.md)。
+- `main` 分支是 Codex 的最新开发分支，`beta/codex-plugin-0.1.0` 是插件的版本分支。
