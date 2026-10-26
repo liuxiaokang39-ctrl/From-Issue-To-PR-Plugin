@@ -9,7 +9,8 @@
 
 非校验模式输出到 -o 目录：facts.md（事实包）、skeleton.md（固定格式骨架）、
 未确认字段清单.md（无法从输入证实的字段）；同时按模块生成
-<docs-root>/<模块名>/README.md，收录公有接口、公有/私有函数的出入参以及数据结构。
+<docs-root>/<模块名>/ 下的 4 个文件（公有接口.md、公有函数.md、私有函数.md、数据结构.md），
+分别收录公有接口、公有函数、私有函数与数据结构，并标注各自定义位置。
 校验模式打印覆盖率报告并以非零状态码表示存在缺失章节、残留「未确认」占位、
 rustdoc JSON 已过期或模块文档缺失覆盖。
 
@@ -33,6 +34,19 @@ SECTION_RE = re.compile(
     r"^#\s+(Arguments|Returns|Errors|Examples|Panics|Safety)\s*$", re.MULTILINE
 )
 UNRESOLVED = "<未解析"
+
+MODULE_DOC_FILES = {
+    "interfaces": "公有接口.md",
+    "public_functions": "公有函数.md",
+    "internal_functions": "私有函数.md",
+    "data_structures": "数据结构.md",
+}
+MODULE_DOC_TITLES = {
+    "interfaces": "公有接口",
+    "public_functions": "公有函数",
+    "internal_functions": "私有函数",
+    "data_structures": "数据结构",
+}
 
 
 @dataclass
@@ -698,10 +712,13 @@ def collect_interfaces(data: dict) -> list[dict]:
                 methods.append(child_name)
         docs = item.get("docs")
         docs_text = docs if isinstance(docs, str) else ""
+        filename, line = span_location(item)
         interfaces.append(
             {
                 "path": canonical_path(str(item_id), item, paths) or name,
                 "name": name,
+                "file": normalize_source_path(filename),
+                "line": line,
                 "summary": split_sections(docs_text).get("summary", ""),
                 "methods": methods,
             }
@@ -887,79 +904,84 @@ def render_structure_fields(item: dict) -> str:
     return f"`{fields}`" if fields else "—"
 
 
-def render_module_doc(module_path: str, bundle: dict) -> str:
+def location_text(file: str, line: int) -> str:
+    normalized = normalize_source_path(str(file or ""))
+    if not normalized:
+        return "—"
+    return f"{normalized}:{line}" if line else normalized
+
+
+def render_module_doc_file(kind: str, module_path: str, items: list) -> str:
+    title = MODULE_DOC_TITLES[kind]
     lines = [
-        f"# 模块 {module_path}",
+        f"# 模块 {module_path} · {title}",
         "",
         "> 由 project-doc-sync 依据 rustdoc JSON 与 syn AST 生成：公有接口与公有函数取自 rustdoc JSON，",
         "> 私有函数与数据结构取自 AST。不推断语义，无法证实的说明记为「—」。",
         "",
-        "## 公有接口",
-        "",
     ]
 
-    interfaces = bundle["interfaces"]
-    if interfaces:
-        lines.append("| 接口 | 可见性 | 方法 | 说明 |")
-        lines.append("| --- | --- | --- | --- |")
-        for interface in interfaces:
-            methods = "、".join(f"`{name}`" for name in interface["methods"]) or "—"
-            lines.append(
-                f"| `{md_cell(display_path(interface['path']))}` | public | {methods} | "
-                f"{md_cell(summary_line(interface['summary']))} |"
-            )
+    if kind == "interfaces":
+        if items:
+            lines.append("| 接口 | 定义位置 | 可见性 | 方法 | 说明 |")
+            lines.append("| --- | --- | --- | --- | --- |")
+            for interface in items:
+                methods = "、".join(f"`{name}`" for name in interface["methods"]) or "—"
+                lines.append(
+                    f"| `{md_cell(display_path(interface['path']))}` | "
+                    f"`{md_cell(location_text(interface.get('file'), _as_int(interface.get('line'))))}` | "
+                    f"public | {methods} | {md_cell(summary_line(interface['summary']))} |"
+                )
+        else:
+            lines.append("（无）")
+    elif kind == "public_functions":
+        if items:
+            lines.append("| 函数 | 定义位置 | 签名 | 入参 | 返回值 | 说明 |")
+            lines.append("| --- | --- | --- | --- | --- | --- |")
+            for fn in items:
+                signature, from_ast = display_signature(fn)
+                note = "（签名取自 AST，待复核）" if from_ast else ""
+                lines.append(
+                    f"| `{md_cell(display_path(fn.path))}` | "
+                    f"`{md_cell(location_text(fn.file, fn.line))}` | "
+                    f"`{md_cell(signature)}`{note} | {render_fn_params(fn.params)} | "
+                    f"`{md_cell(fn.returns)}` | "
+                    f"{md_cell(summary_line(fn.sections.get('summary') or ''))} |"
+                )
+        else:
+            lines.append("（无）")
+    elif kind == "internal_functions":
+        if items:
+            lines.append("| 函数 | 定义位置 | 签名 | 入参 | 返回值 | 说明 |")
+            lines.append("| --- | --- | --- | --- | --- | --- |")
+            for entry in items:
+                lines.append(
+                    f"| `{md_cell(str(entry.get('name') or ''))}` | "
+                    f"`{md_cell(location_text(entry.get('file'), _as_int(entry.get('line'))))}` | "
+                    f"`{md_cell(str(entry.get('signature') or ''))}` | "
+                    f"{render_ast_params(entry.get('params') or [])} | "
+                    f"`{md_cell(str(entry.get('return_type') or '()'))}` | "
+                    f"{md_cell(doc_line_summary(entry.get('doc_lines') or []))} |"
+                )
+        else:
+            lines.append("（无）")
+    elif kind == "data_structures":
+        if items:
+            lines.append("| 名称 | 定义位置 | 类型 | 可见性 | 字段 / 变体 | 说明 |")
+            lines.append("| --- | --- | --- | --- | --- | --- |")
+            for item in items:
+                lines.append(
+                    f"| `{md_cell(str(item.get('name') or ''))}` | "
+                    f"`{md_cell(location_text(item.get('file'), _as_int(item.get('line'))))}` | "
+                    f"{md_cell(str(item.get('kind') or ''))} | "
+                    f"{md_cell(str(item.get('visibility') or ''))} | "
+                    f"{render_structure_fields(item)} | "
+                    f"{md_cell(doc_line_summary(item.get('doc_lines') or []))} |"
+                )
+        else:
+            lines.append("（无）")
     else:
-        lines.append("（无）")
-
-    lines.extend(["", "## 公有函数", ""])
-    public_functions = bundle["public_functions"]
-    if public_functions:
-        lines.append("| 函数 | 签名 | 入参 | 返回值 | 说明 |")
-        lines.append("| --- | --- | --- | --- | --- |")
-        for fn in public_functions:
-            signature, from_ast = display_signature(fn)
-            note = "（签名取自 AST，待复核）" if from_ast else ""
-            lines.append(
-                f"| `{md_cell(display_path(fn.path))}` | `{md_cell(signature)}`{note} | "
-                f"{render_fn_params(fn.params)} | `{md_cell(fn.returns)}` | "
-                f"{md_cell(summary_line(fn.sections.get('summary') or ''))} |"
-            )
-    else:
-        lines.append("（无）")
-
-    lines.extend(["", "## 私有函数", ""])
-    internal_functions = bundle["internal_functions"]
-    if internal_functions:
-        lines.append("| 函数 | 签名 | 入参 | 返回值 | 说明 |")
-        lines.append("| --- | --- | --- | --- | --- |")
-        for entry in internal_functions:
-            name = str(entry.get("name") or "")
-            location = f"{entry.get('file') or ''}:{_as_int(entry.get('line'))}"
-            lines.append(
-                f"| `{md_cell(name)}`（{md_cell(location)}） | "
-                f"`{md_cell(str(entry.get('signature') or ''))}` | "
-                f"{render_ast_params(entry.get('params') or [])} | "
-                f"`{md_cell(str(entry.get('return_type') or '()'))}` | "
-                f"{md_cell(doc_line_summary(entry.get('doc_lines') or []))} |"
-            )
-    else:
-        lines.append("（无）")
-
-    lines.extend(["", "## 数据结构", ""])
-    structures = bundle["data_structures"]
-    if structures:
-        lines.append("| 名称 | 类型 | 可见性 | 字段 / 变体 | 说明 |")
-        lines.append("| --- | --- | --- | --- | --- |")
-        for item in structures:
-            lines.append(
-                f"| `{md_cell(str(item.get('name') or ''))}` | "
-                f"{md_cell(str(item.get('kind') or ''))} | "
-                f"{md_cell(str(item.get('visibility') or ''))} | "
-                f"{render_structure_fields(item)} | "
-                f"{md_cell(doc_line_summary(item.get('doc_lines') or []))} |"
-            )
-    else:
-        lines.append("（无）")
+        raise SystemExit(f"未知的模块文档类型：{kind}")
 
     return "\n".join(lines) + "\n"
 
@@ -970,19 +992,21 @@ def write_module_docs(docs_root: Path, modules: dict[str, dict]) -> list[Path]:
         bundle = modules[module_path]
         if not has_module_content(bundle):
             continue
-        target = docs_root / module_dir_name(module_path) / "README.md"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(render_module_doc(module_path, bundle), encoding="utf-8")
-        written.append(target)
-        print(f"模块文档：{target}")
+        target_dir = docs_root / module_dir_name(module_path)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for kind, filename in MODULE_DOC_FILES.items():
+            target = target_dir / filename
+            target.write_text(
+                render_module_doc_file(kind, module_path, bundle[kind]),
+                encoding="utf-8",
+            )
+            written.append(target)
+            print(f"模块文档：{target}")
     return written
 
 
 def has_module_content(bundle: dict) -> bool:
-    return any(
-        bundle[key]
-        for key in ("public_functions", "internal_functions", "interfaces", "data_structures")
-    )
+    return any(bundle[key] for key in MODULE_DOC_FILES)
 
 
 def verify_module_docs(docs_root: Path, modules: dict[str, dict]) -> list[str]:
@@ -991,27 +1015,46 @@ def verify_module_docs(docs_root: Path, modules: dict[str, dict]) -> list[str]:
         bundle = modules[module_path]
         if not has_module_content(bundle):
             continue
-        target = docs_root / module_dir_name(module_path) / "README.md"
-        if not target.is_file():
-            errors.append(f"模块 `{module_path}`：缺少模块文档 `{target}`")
-            continue
-        text = target.read_text(encoding="utf-8")
+        target_dir = docs_root / module_dir_name(module_path)
+        texts: dict[str, str] = {}
+        for kind, filename in MODULE_DOC_FILES.items():
+            target = target_dir / filename
+            if not target.is_file():
+                errors.append(f"模块 `{module_path}`：缺少模块文档 `{target}`")
+                continue
+            texts[kind] = target.read_text(encoding="utf-8")
+
         for fn in bundle["public_functions"]:
+            text = texts.get("public_functions", "")
             if f"`{display_path(fn.path)}`" not in text:
-                errors.append(f"模块 `{module_path}`：模块文档未收录公有函数 `{fn.path}`")
+                errors.append(f"模块 `{module_path}`：公有函数文档未收录 `{fn.path}`")
+            if fn.file and location_text(fn.file, fn.line) not in text:
+                errors.append(f"模块 `{module_path}`：公有函数文档未标注 `{fn.path}` 的定义位置")
         for entry in bundle["internal_functions"]:
             name = str(entry.get("name") or "")
+            text = texts.get("internal_functions", "")
             if f"`{name}`" not in text:
-                errors.append(f"模块 `{module_path}`：模块文档未收录私有函数 `{name}`")
+                errors.append(f"模块 `{module_path}`：私有函数文档未收录 `{name}`")
+            location = location_text(entry.get("file"), _as_int(entry.get("line")))
+            if entry.get("file") and location not in text:
+                errors.append(f"模块 `{module_path}`：私有函数文档未标注 `{name}` 的定义位置")
         for interface in bundle["interfaces"]:
+            text = texts.get("interfaces", "")
             if f"`{display_path(interface['path'])}`" not in text:
+                errors.append(f"模块 `{module_path}`：公有接口文档未收录 `{interface['path']}`")
+            location = location_text(interface.get("file"), _as_int(interface.get("line")))
+            if interface.get("file") and location not in text:
                 errors.append(
-                    f"模块 `{module_path}`：模块文档未收录公有接口 `{interface['path']}`"
+                    f"模块 `{module_path}`：公有接口文档未标注 `{interface['path']}` 的定义位置"
                 )
         for item in bundle["data_structures"]:
             name = str(item.get("name") or "")
+            text = texts.get("data_structures", "")
             if f"`{name}`" not in text:
-                errors.append(f"模块 `{module_path}`：模块文档未收录数据结构 `{name}`")
+                errors.append(f"模块 `{module_path}`：数据结构文档未收录 `{name}`")
+            location = location_text(item.get("file"), _as_int(item.get("line")))
+            if item.get("file") and location not in text:
+                errors.append(f"模块 `{module_path}`：数据结构文档未标注 `{name}` 的定义位置")
     return errors
 
 

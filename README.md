@@ -88,7 +88,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 
 - **职责**：在测试通过后，以 rustdoc JSON 为可信底座、syn AST 补全缺失信息，更新 Rust 公有接口的 `///` 文档，并按模块生成接口与数据结构文档。
 - **输入**：测试通过的 Rust 代码、rustdoc JSON、AST 事实 JSON、现有项目文档。
-- **产出**：就地更新的公有接口源码 `///`（`# Arguments`、`# Returns`、`# Errors`、`# Examples`）、`docs/data-struct-and-interface/<模块名>/README.md`（公有接口、公有/私有函数出入参、数据结构）、相关项目说明与未确认字段清单；中间产物写入 `target/rust-fn-doc/`。
+- **产出**：就地更新的公有接口源码 `///`（`# Arguments`、`# Returns`、`# Errors`、`# Examples`）、`docs/data-struct-and-interface/<模块名>/` 下按类别拆分的 `公有接口.md`、`公有函数.md`、`私有函数.md`、`数据结构.md`（含定义位置）、相关项目说明与未确认字段清单；中间产物写入 `target/rust-fn-doc/`。
 - **关键行为**：签名与 doc 事实只取自 rustdoc JSON，AST 只补函数体结构、错误分支、调用关系、私有函数与数据结构；LLM 只做合成，不臆造参数含义、错误码、返回值语义；源码 `///` 只更新公有接口，私有函数与数据结构只进模块文档；先用 `scripts/extract_rustdoc_json.sh` 生成 JSON，再用 `scripts/ast_inspect.rs` 补全，由 `scripts/generate_fn_docs.py` 产出事实包、骨架、未确认清单与模块文档，最后用 `evals/verify_doc_coverage.sh` 校验；只同步经测试验证的代码，不修改开发文档与流程图。
 - **适用范围**：本版本仅支持 Rust，其他语言暂不支持。
 

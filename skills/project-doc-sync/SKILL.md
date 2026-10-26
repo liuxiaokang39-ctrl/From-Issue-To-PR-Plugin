@@ -25,11 +25,12 @@ description: 项目文档同步阶段（本版本仅支持 Rust）：在测试�
 | 载体 | 内容范围 | 更新范围 |
 | --- | --- | --- |
 | 源码 `///` | 公有接口的对外契约：职责、参数、返回值、错误、示例 | **只更新公有接口**；私有函数、数据结构的注释一律不新增、不修改 |
-| `docs/data-struct-and-interface/<模块名>/README.md` | 该模块的公有接口、公有函数、私有函数的入参 / 返回值，以及数据结构（结构体、枚举、联合体、类型别名等） | 每次同步按当前代码整体生成 |
+| `docs/data-struct-and-interface/<模块名>/` 下的 4 个文件 | `公有接口.md`（公有接口）、`公有函数.md`（公有函数）、`私有函数.md`（私有函数）、`数据结构.md`（结构体、枚举、联合体、类型别名等）；每条记录标注定义位置 | 每次同步按当前代码整体生成 |
 
-- `<模块名>` 取 Rust 模块路径去掉 crate 根后的层级：`crate::foo::bar` 写入 `docs/data-struct-and-interface/foo/bar/README.md`，crate 根模块写入 `docs/data-struct-and-interface/crate/README.md`。
+- `<模块名>` 取 Rust 模块路径去掉 crate 根后的层级：`crate::foo::bar` 写入 `docs/data-struct-and-interface/foo/bar/`，crate 根模块写入 `docs/data-struct-and-interface/crate/`；目录内固定 4 个文件。
+- 定义位置统一写成 `文件路径:行号`（如 `src/foo.rs:42`），取自 rustdoc JSON 的 span 或 AST 的 `file` / `line`。
 - 模块文档是项目文档的一部分，必须随代码提交维护；`target/` 下的中间产物不提交。
-- 模块文档只记录事实（签名、类型、可见性、字段、既有 doc 摘要），不推断语义；无法证实的说明留「—」，需要语义解释时登记到未确认字段清单。
+- 模块文档只记录事实（签名、类型、可见性、字段、定义位置、既有 doc 摘要），不推断语义；无法证实的说明留「—」，需要语义解释时登记到未确认字段清单。
 
 ## 必要前提
 
@@ -40,7 +41,7 @@ description: 项目文档同步阶段（本版本仅支持 Rust）：在测试�
 5. **以代码为准**：项目文档必须与真实实现一致，不得沿用过期描述，也不得凭开发文档推断现状。
 6. **奥卡姆剃刀**：只更新与本次改动相关的过期内容，不做无关重写。
 7. **格式固定**：源码 `///` 固定为 Rustdoc Markdown，章节依次为 `///`、`# Arguments`、`# Returns`、`# Errors`、`# Examples`；模块文档固定为 `assets/module_interface_doc.md` 定义的 Markdown 表格格式。
-8. **双轨输出**：源码 `///` 只更新公有接口的接口信息（职责、参数、返回值、错误、示例）；私有函数与数据结构（结构体、枚举、联合体、类型别名等）不改源码注释，其函数出入参（公有函数、私有函数）与数据结构信息统一写入 `docs/data-struct-and-interface/<模块名>/README.md`。
+8. **双轨输出**：源码 `///` 只更新公有接口的接口信息（职责、参数、返回值、错误、示例）；私有函数与数据结构（结构体、枚举、联合体、类型别名等）不改源码注释，其函数出入参（公有函数、私有函数）与数据结构信息统一写入 `docs/data-struct-and-interface/<模块名>/`，并按类别固定分为 `公有接口.md`、`公有函数.md`、`私有函数.md`、`数据结构.md` 4 个文件，每条记录标注定义位置（`文件路径:行号`）。
 9. **依赖缺失先补齐**：执行本 Skill 的脚本或校验命令时，如果因依赖缺失（Python 解释器、Rust nightly 工具链、`rust-script`、Python 包等）无法运行，先自行安装 / 补齐依赖并重试，补齐后继续原流程；不得因为缺依赖就跳过步骤，也不得改用其他来源替代可信底座。确实无法安装时，才停止并说明缺失项、安装命令与受影响的步骤。
 
 ## 三层职责
@@ -68,15 +69,15 @@ bash scripts/extract_rustdoc_json.sh -p <crate名> --manifest-path <Cargo.toml�
 - 记录 JSON 的 `format_version`。rustdoc JSON 格式随 nightly 变动，更换工具链后必须重新生成，不得混用不同版本的 JSON。
 - 依赖补齐后仍生成失败（编译错误、目标 crate 不可构建）时停止本阶段并告知人类；不得改用 AST 签名冒充可信底座。
 
-### 2. 生成可读骨架（可选）
+### 2. 生成可读骨架
 
-用 `rustdoc-json-to-markdown` 或 `rustdoc-llms` 把 JSON 转成可读骨架，便于人工快速浏览 API 全貌：
+必须用 `rustdoc-json-to-markdown` 或 `rustdoc-llms` 把 JSON 转成可读骨架，便于人工快速浏览 API 全貌：
 
 ```bash
 rustdoc-json-to-markdown target/rust-fn-doc/<crate名>.json -o target/rust-fn-doc/skeleton-from-rustdoc.md
 ```
 
-- 这两个工具为可选外部依赖。决定使用但尚未安装时，按必要前提 9 先安装（如 `cargo install`）再执行；不使用本步骤时直接跳过，不阻塞流程。
+- 这两个工具为必需外部依赖。尚未安装时，按必要前提 9 先安装（如 `cargo install`）再执行；不得跳过本步骤。
 - 骨架只用于阅读，**不是事实来源**：骨架与 JSON 不一致时，一律以 rustdoc JSON 为准。
 
 ### 3. AST 补全：syn 解析源码
@@ -137,14 +138,15 @@ python3 scripts/generate_fn_docs.py \
   --docs-root docs/data-struct-and-interface
 ```
 
-- 产物：`docs/data-struct-and-interface/<模块名>/README.md`，按模块分别收录：
-  - 公有接口：公有 trait 及其方法；
-  - 公有函数：签名、入参、返回值；
-  - 私有函数（含 `pub(crate)` 等非公有函数，以及未进入公有 API 的 `pub` 函数）：签名、入参、返回值；
-  - 数据结构：结构体、枚举、联合体、类型别名等，含字段 / 变体与可见性。
+- 产物：`docs/data-struct-and-interface/<模块名>/` 下固定 4 个文件，分别收录：
+  - `公有接口.md`：公有 trait 及其方法；
+  - `公有函数.md`：公有函数的签名、入参、返回值；
+  - `私有函数.md`：私有函数（含 `pub(crate)` 等非公有函数，以及未进入公有 API 的 `pub` 函数）的签名、入参、返回值；
+  - `数据结构.md`：结构体、枚举、联合体、类型别名等，含字段 / 变体与可见性。
+- 每条记录必须标注定义位置（`文件路径:行号`）：公有接口与公有函数取自 rustdoc JSON 的 span，私有函数与数据结构取自 AST 的 `file` / `line`。
 - 事实来源：公有接口与公有函数取自 rustdoc JSON（权威），私有函数与数据结构取自 AST；不得据此推断语义，无法证实的说明留「—」并登记到未确认字段清单。
 - 固定格式见 `assets/module_interface_doc.md`；仅在本步骤读取该模板正文。
-- crate 根模块写入 `crate/README.md`；`crate::foo::bar` 写入 `foo/bar/README.md`。模块文档必须提交，随代码一起维护。
+- crate 根模块写入 `crate/`；`crate::foo::bar` 写入 `foo/bar/`，两者都包含上述 4 个文件。模块文档必须提交，随代码一起维护。
 - 源码 `///` 不为私有函数、数据结构补注释；它们只出现在模块文档中。
 
 ### 6. 校验覆盖率与一致性
@@ -164,7 +166,7 @@ bash evals/verify_doc_coverage.sh \
 - 返回 `Result` 时存在 `# Errors`；
 - 源码 doc 与 rustdoc JSON 的 `docs` 一致（不一致说明 JSON 已过期，必须重新生成）；
 - 源码中不残留 `未确认` 占位标记；
-- 每个模块都存在 `docs/data-struct-and-interface/<模块名>/README.md`，且覆盖该模块的公有接口、公有函数、私有函数与数据结构；
+- 每个模块目录都存在且固定包含 `公有接口.md`、`公有函数.md`、`私有函数.md`、`数据结构.md`，并分别覆盖该模块的公有接口、公有函数、私有函数与数据结构；每条记录都带定义位置；
 - `# Examples` 缺失按警告提示，不计为失败。
 
 任一项失败必须修复后重跑，不得跳过。必要时补充执行 `cargo test --doc` 与 `cargo doc --no-deps` 验证示例与文档可构建。
@@ -176,7 +178,7 @@ bash evals/verify_doc_coverage.sh \
 1. 修改的文件与位置，以及新增 / 更新的模块文档路径；
 2. 覆盖率校验结论；
 3. **未确认字段清单**（表格：函数 | 字段 | 原因 | 需人类确认的内容 | 位置）；
-4. 跳过的步骤与原因（如未安装 rustdoc-json-to-markdown）。
+4. 依赖补齐情况；若因依赖确实无法安装而阻塞，说明缺失项、安装命令与受影响的步骤。
 
 清单默认只在回复中给出，不写入项目文档；人类要求留档时再写入指定位置。
 
@@ -194,7 +196,7 @@ bash evals/verify_doc_coverage.sh \
 ## 产物
 
 - 就地更新的源码 `///` 文档注释：仅公有接口，不新建 API 文档副本。
-- `docs/data-struct-and-interface/<模块名>/README.md`：按模块保存公有接口、公有函数、私有函数的出入参与数据结构信息（提交到项目）。
+- `docs/data-struct-and-interface/<模块名>/` 下的 `公有接口.md`、`公有函数.md`、`私有函数.md`、`数据结构.md`：按分类保存公有接口、公有函数、私有函数的出入参与数据结构信息，每条记录标注定义位置（提交到项目）。
 - `target/rust-fn-doc/` 下的中间产物：rustdoc JSON、AST JSON、事实包、骨架、未确认字段清单（均为工作区临时产物，不提交）。
 
 ## 脚本与资源

@@ -6,9 +6,8 @@
 #     [--docs-root <模块文档根目录>]
 #
 # 校验项：文档摘要、# Arguments（逐个参数）、# Returns、# Errors、源码中残留的
-# 「未确认」占位、rustdoc JSON 是否已过期，以及每个模块的
-# docs/data-struct-and-interface/<模块名>/README.md 是否覆盖公有接口、公有函数、
-# 私有函数与数据结构。缺少 # Examples 只给出警告。
+# 「未确认」占位、rustdoc JSON 是否已过期，以及每个模块目录下的
+# 公有接口.md、公有函数.md、私有函数.md、数据结构.md 是否覆盖对应条目并标注定义位置。缺少 # Examples 只给出警告。
 # 存在问题时有非零退出码。
 set -euo pipefail
 
