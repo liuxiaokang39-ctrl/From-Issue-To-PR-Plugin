@@ -39,7 +39,7 @@ git clone https://github.com/liuxiaokang39-ctrl/From-Issue-To-PR-Skill.git
 - **本地插件**：在所用工具的插件设置中把该目录作为本地插件加入，工具会读取 `plugin.json` 并从 `./skills/` 加载 Skill。
 - **插件源（marketplace）**：把本仓库地址作为插件源添加，再安装 `from-issue-to-pr`。
 
-不同工具的插件目录与加载命令不同（Codex、Claude Code 等），具体以工具自身的插件文档为准。
+不同工具的插件目录与加载命令不同（Codex、Claude Code 等），具体以工具自身的插件文档为准。Codex CLI 的完整安装步骤见 [docs/install/codex.md](docs/install/codex.md)。
 
 ## 使用
 
@@ -87,8 +87,8 @@ git clone https://github.com/liuxiaokang39-ctrl/From-Issue-To-PR-Skill.git
 | --- | --- | --- |
 | `SessionStart` | 注入 8 阶段工作流与已有开发序号，避免每次手工说明当前进度 | 否 |
 | `PreToolUse`（Bash） | 拦截强制推送、`reset --hard`、`clean -f`、强删分支、`checkout -- .`、`gh pr merge --admin` 等不可逆命令 | 是（deny） |
-| `PostToolUse`（Write/Edit） | 写入 `docs/dev-docs/<开发序号>/` 产物后，自动运行对应 Skill 的 `evals/` 校验并把结果回给模型 | 否 |
-| `Stop` | 检查最近一个开发序号目录的产物是否齐全，缺产物时提醒而非静默结束 | 否 |
+| `PostToolUse`（Write/Edit/MultiEdit 或 apply_patch） | 写入 `docs/dev-docs/<开发序号>/` 产物后，自动运行对应 Skill 的 `evals/` 校验并把结果回给模型 | 否 |
+| `Stop` | 检查最近一个开发序号目录的产物是否齐全，缺产物时让模型继续补齐或向用户说明 | 否（继续一次） |
 
 `project-doc-sync` 的校验依赖 rustdoc JSON 参数，无法从文件路径推断，故不自动触发，需在该阶段按命令说明手工运行。
 

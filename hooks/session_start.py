@@ -29,7 +29,8 @@ def main() -> int:
         "【from-issue-to-pr 插件】当前工作流共 8 个阶段：",
         _STAGES,
         "产物统一落在 docs/dev-docs/<开发序号>/，项目文档按既有位置就地更新。",
-        "单阶段用对应命令（/from-issue-to-pr:issue 等），全流程用 /from-issue-to-pr:workflow。",
+        "单阶段调用对应 Skill（如 issue-writer）；Claude Code 可用 /from-issue-to-pr:issue 等命令，Codex 用 $issue-writer 等技能名。",
+        "全流程按上述顺序串联；Claude Code 可用 /from-issue-to-pr:workflow 一次推进。",
     ]
     recent = _recent_indexes(project_dir)
     if recent:

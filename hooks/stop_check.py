@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Stop hook：阶段收尾时检查最近一个开发序号目录的产物是否齐全。
 
-只做提醒，不阻断结束：缺产物时把清单回给模型，让其补齐后再收尾。
+缺产物时返回一次继续执行的决定，把清单回给模型，让其补齐后再收尾；
+`stop_hook_active` 为真时不再重复触发，避免无限循环。
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -38,7 +40,11 @@ def _has_any(index_dir: Path, suffixes: tuple[str, ...]) -> bool:
 
 
 def main() -> int:
-    project_dir = Path(lib.read_event().get("cwd") or Path.cwd())
+    event = lib.read_event()
+    if event.get("stop_hook_active"):
+        return 0
+
+    project_dir = Path(event.get("cwd") or Path.cwd())
     index_dir = _latest_index_dir(project_dir)
     if index_dir is None:
         return 0
@@ -54,13 +60,14 @@ def main() -> int:
     if not missing:
         return 0
 
-    lib.emit_context(
-        "Stop",
+    reason = (
         "【产物收尾提醒】开发序号 "
         f"{index_dir.name} 下仍有未落盘或缺失的产物：\n- "
         + "\n- ".join(missing)
-        + "\n若本次只做部分阶段，可忽略与当前阶段无关的条目。",
+        + "\n请补齐后再收尾；若本次只做部分阶段，请向用户说明并忽略与当前阶段无关的条目。"
     )
+    json.dump({"decision": "block", "reason": reason}, sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
     return 0
 
 

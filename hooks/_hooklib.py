@@ -28,10 +28,11 @@ def read_event() -> dict:
 
 
 def plugin_root() -> Path:
-    """插件根目录：优先取 CLAUDE_PLUGIN_ROOT，否则用本文件的上两级目录。"""
-    env = os.environ.get("CLAUDE_PLUGIN_ROOT")
-    if env:
-        return Path(env)
+    """插件根目录：优先取宿主注入的插件根变量，否则用本文件的上两级目录。"""
+    for name in ("PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"):
+        env = os.environ.get(name)
+        if env:
+            return Path(env)
     return Path(__file__).resolve().parent.parent
 
 
