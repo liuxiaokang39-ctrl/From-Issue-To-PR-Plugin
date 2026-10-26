@@ -115,6 +115,8 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │   ├── SKILL.md
     │   ├── assets/
     │   │   └── issue-template.md
+    │   ├── evals/
+    │   │   └── verify_artifacts.py
     │   └── references/
     │       ├── GitHub-CLI.md
     │       └── GitHub-submit.md
@@ -122,24 +124,35 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │   ├── SKILL.md
     │   ├── assets/
     │   │   ├── dev-doc-template.md
-    │   │   └── flowchart-template.md
+    │   │   ├── flowchart-template.md
+    │   │   └── interface-contract-template.md
+    │   ├── evals/
+    │   │   └── verify_artifacts.py
     │   └── references/
     │       ├── visibility-attributes.md
     │       ├── function-design-rules.md
-    │       └── call-relationship-rules.md
+    │       ├── call-relationship-rules.md
+    │       └── resource-lifecycle-rules.md
     ├── task-planner/
     │   ├── SKILL.md
     │   ├── assets/
     │   │   └── task-template.md
+    │   ├── evals/
+    │   │   └── verify_artifacts.py
+    │   ├── references/
+    │   │   └── resource-lifecycle-rules.md
     │   └── scripts/
     │       └── topo_sort.py
     ├── implementer/
     │   ├── SKILL.md
+    │   ├── evals/
+    │   │   └── verify_artifacts.py
     │   └── references/
     │       ├── function-design-rules.md
     │       ├── call-relationship-rules.md
     │       ├── GitHub-CLI.md
     │       ├── GitHub-submit.md
+    │       ├── resource-lifecycle-rules.md
     │       └── rust-global-constraints.md
     ├── test-planner/
     │   ├── SKILL.md
@@ -147,17 +160,23 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │   │   ├── unit-whitebox-test-process-template.md
     │   │   ├── integration-whitebox-test-process-template.md
     │   │   └── deployment-blackbox-test-process-template.md
+    │   ├── evals/
+    │   │   └── verify_artifacts.py
     │   └── references/
-    │       └── visibility-attributes.md
+    │       ├── visibility-attributes.md
+    │       └── resource-lifecycle-rules.md
     ├── test-runner/
     │   ├── SKILL.md
-    │   └── assets/
-    │       ├── test-pass-report-template.md
-    │       └── test-fail-report-template.md
+    │   ├── assets/
+    │   │   ├── test-pass-report-template.md
+    │   │   └── test-fail-report-template.md
+    │   └── evals/
+    │       └── verify_artifacts.py
     ├── project-doc-sync/
     │   ├── SKILL.md
     │   ├── assets/
-    │   │   └── fn_doc.md
+    │   │   ├── fn_doc.md
+    │   │   └── module_interface_doc.md
     │   ├── evals/
     │   │   └── verify_doc_coverage.sh
     │   └── scripts/
@@ -166,12 +185,14 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
     │       └── generate_fn_docs.py
     └── pr-creator/
         ├── SKILL.md
+        ├── evals/
+        │   └── verify_artifacts.py
         └── references/
             ├── GitHub-CLI.md
             └── GitHub-submit.md
 ```
 
-8 个 Skill 的 `SKILL.md` 正文均已补充。各 Skill 按 [docs/开发规范.md](docs/开发规范.md) 组织工作区：`references/` 存放规范、命令参考与决策表，`assets/` 存放模板与样例，`scripts/` 存放确定性脚本。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer`、`implementer`、`pr-creator` 各自附带的参考文件。
+8 个 Skill 的 `SKILL.md` 正文均已补充。各 Skill 按 [docs/开发规范.md](docs/开发规范.md) 组织工作区：`references/` 存放规范、命令参考与决策表，`assets/` 存放模板与样例，`scripts/` 存放确定性脚本，`evals/` 存放执行后校验产物是否落在约定位置的脚本（`verify_artifacts.py`；`project-doc-sync` 为 `verify_doc_coverage.sh`）。`GitHub-CLI.md`（gh 命令参考）与 `GitHub-submit.md`（Conventional Commits 提交规范与 Git 安全约束）为 `issue-writer`、`implementer`、`pr-creator` 各自附带的参考文件。
 
 ## 快速开始
 
