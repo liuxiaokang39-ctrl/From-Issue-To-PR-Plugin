@@ -3,7 +3,7 @@
 本文件写给协助用户安装本插件的 Agent。安装范围保持最小：不要克隆仓库、不要改用户的
 全局 Codex 配置、不要复制认证文件、不要绕过 Hook 信任审核。
 
-插件清单见 [plugin.json](../../plugin.json)，插件整体说明见
+插件清单位于 `beta/codex-plugin-0.1.0` 分支的 `.codex-plugin/plugin.json`，插件整体说明见
 [README.md](../../README.md)。
 
 ## 前置依赖
@@ -33,10 +33,10 @@ codex plugin list --json
 
 ### 从 GitHub 安装
 
-Codex 版本位于 `main` 分支，插件清单为根目录 `plugin.json`；从 GitHub 安装时直接使用默认分支：
+当前 Codex 版本位于 `beta/codex-plugin-0.1.0` 分支，需用 `--ref` 固定：
 
 ```powershell
-codex plugin marketplace add liuxiaokang39-ctrl/From-Issue-To-PR-Skill
+codex plugin marketplace add liuxiaokang39-ctrl/From-Issue-To-PR-Skill --ref beta/codex-plugin-0.1.0
 codex plugin add from-issue-to-pr@from-issue-to-pr
 ```
 
@@ -98,5 +98,5 @@ Codex 中没有 `/from-issue-to-pr:workflow` 命令。走完整流程时，让 C
 - Hook 只覆盖 Codex 的 `Bash`（`exec_command`）与 `apply_patch`；通过其他工具或脚本
   写文件时不会触发产物校验。
 - 插件不改变 Codex 的沙箱与审批设置，也不替代 Codex 自身的权限确认。
-- 本分支为 Codex 版本；Claude Code 版本位于 `beta/claude-code-plugin-0.1.0` 分支，安装见
+- Codex 版本位于 `beta/codex-plugin-0.1.0` 分支；Claude Code 版本安装见
   [claude-code.md](claude-code.md)。

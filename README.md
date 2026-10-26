@@ -35,7 +35,7 @@ Windows 下 hooks 以 `python` 调用脚本；若环境只有 `python3`，需同
 | 目标工具 | 插件版本位置 | 安装文档 |
 | --- | --- | --- |
 | Claude Code | `beta/claude-code-plugin-0.1.0` 分支（`.claude-plugin/` 清单） | [docs/install/claude-code.md](docs/install/claude-code.md) |
-| Codex | `main` 分支（根目录 `plugin.json`） | [docs/install/codex.md](docs/install/codex.md) |
+| Codex | `beta/codex-plugin-0.1.0` 分支（`.codex-plugin/` 清单） | [docs/install/codex.md](docs/install/codex.md) |
 
 安装对应版本的插件时使用对应的安装文档；安装命令、重启加载、Hook 信任与冒烟测试均见文档正文。
 
