@@ -4,7 +4,7 @@
 
 ## 插件简介
 
-本仓库本身就是一个可安装的插件，插件清单位于 [.codex-plugin/plugin.json](.codex-plugin/plugin.json)。
+本仓库本身就是一个可安装的插件，插件清单位于 [plugin.json](plugin.json)。
 
 插件包含：
 
@@ -30,16 +30,14 @@ Windows 下 hooks 以 `python` 调用脚本；若环境只有 `python3`，需同
 
 ### 安装方式
 
-本仓库根目录即插件根，安装时把整个目录作为插件加载即可：
+本仓库根目录即插件根，插件清单为 [plugin.json](plugin.json)。不同工具的插件清单与加载命令不同，按目标工具使用对应的安装文档：
 
-```bash
-git clone https://github.com/liuxiaokang39-ctrl/From-Issue-To-PR-Skill.git
-```
+| 目标工具 | 插件版本位置 | 安装文档 |
+| --- | --- | --- |
+| Claude Code | `beta/claude-code-plugin-0.1.0` 分支（`.claude-plugin/` 清单） | [docs/install/claude-code.md](docs/install/claude-code.md) |
+| Codex | `main` 分支（根目录 `plugin.json`） | [docs/install/codex.md](docs/install/codex.md) |
 
-- **本地插件**：在所用工具的插件设置中把该目录作为本地插件加入，工具会读取 `plugin.json` 并从 `./skills/` 加载 Skill。
-- **插件源（marketplace）**：把本仓库地址作为插件源添加，再安装 `from-issue-to-pr`。
-
-不同工具的插件目录与加载命令不同（Codex、Claude Code 等），具体以工具自身的插件文档为准。
+安装对应版本的插件时使用对应的安装文档；安装命令、重启加载、Hook 信任与冒烟测试均见文档正文。
 
 ## 使用
 
@@ -108,8 +106,7 @@ python skills/project-doc-sync/evals/verify_doc_coverage.sh \
 
 ```
 .
-├── .codex-plugin/
-│   └── plugin.json              # 插件清单
+├── plugin.json                  # 插件清单
 ├── README.md                    # 安装与使用说明
 ├── agents/
 │   └── workflow-orchestrator.md # 主编排 Agent
@@ -130,16 +127,19 @@ python skills/project-doc-sync/evals/verify_doc_coverage.sh \
 │   ├── test-runner/
 │   ├── project-doc-sync/
 │   └── pr-creator/
-└── docs/                        # 插件自身的开发规范与架构说明
+└── docs/                        # 插件自身的开发规范、架构说明与安装文档
     ├── 开发规范.md
-    └── 项目架构.md
+    ├── 项目架构.md
+    └── install/
+        ├── claude-code.md
+        └── codex.md
 ```
 
 每个 Skill 目录按 [docs/开发规范.md](docs/开发规范.md) 组织：`SKILL.md` 为唯一必需文件；`references/` 存规范与命令参考，`assets/` 存模板样例，`scripts/` 存确定性脚本，`evals/` 存产物校验脚本。
 
 ## 开发这个插件
 
-- 新增 Skill：在 `skills/` 下建同名目录并写 `SKILL.md`，`.codex-plugin/plugin.json` 的 `skills` 已指向 `../skills/`，无需改动清单。
+- 新增 Skill：在 `skills/` 下建同名目录并写 `SKILL.md`，[plugin.json](plugin.json) 的 `skills` 已指向 `./skills/`，无需改动清单。
 - 新增命令：在 `commands/` 下加一个 Markdown 文件，frontmatter 写 `description` 与 `argument-hint`，正文声明调用哪个 Skill。
 - 调整钩子：改 `hooks/hooks.json` 的事件映射，脚本放在 `hooks/` 下并复用 `_hooklib.py`。
 - 交付前跑一遍相关 `evals/` 脚本，确认产物仍落在约定位置。
