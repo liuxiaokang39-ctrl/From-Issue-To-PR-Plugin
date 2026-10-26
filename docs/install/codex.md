@@ -3,7 +3,7 @@
 本文件写给协助用户安装本插件的 Agent。安装范围保持最小：不要克隆仓库、不要改用户的
 全局 Codex 配置、不要复制认证文件、不要绕过 Hook 信任审核。
 
-插件清单位于 `beta/codex-plugin-0.1.0` 分支的 `.codex-plugin/plugin.json`，插件整体说明见
+插件清单见 [.codex-plugin/plugin.json](../../.codex-plugin/plugin.json)，插件整体说明见
 [README.md](../../README.md)。
 
 ## 前置依赖

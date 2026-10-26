@@ -4,7 +4,7 @@
 
 ## 插件简介
 
-本仓库本身就是一个可安装的插件，插件清单位于 [plugin.json](plugin.json)。
+本仓库本身就是一个可安装的插件，插件清单位于 [.codex-plugin/plugin.json](.codex-plugin/plugin.json)。
 
 插件包含：
 
@@ -101,7 +101,8 @@ python skills/project-doc-sync/evals/verify_doc_coverage.sh \
 
 ```
 .
-├── plugin.json                  # 插件清单
+├── .codex-plugin/
+│   └── plugin.json              # 插件清单
 ├── README.md                    # 安装与使用说明
 ├── agents/
 │   └── workflow-orchestrator.md # 主编排 Agent
@@ -133,7 +134,7 @@ python skills/project-doc-sync/evals/verify_doc_coverage.sh \
 
 ## 开发这个插件
 
-- 新增 Skill：在 `skills/` 下建同名目录并写 `SKILL.md`，[plugin.json](plugin.json) 的 `skills` 已指向 `./skills/`，无需改动清单。
+- 新增 Skill：在 `skills/` 下建同名目录并写 `SKILL.md`，[.codex-plugin/plugin.json](.codex-plugin/plugin.json) 的 `skills` 已指向 `../skills/`，无需改动清单。
 - 新增命令：在 `commands/` 下加一个 Markdown 文件，frontmatter 写 `description` 与 `argument-hint`，正文声明调用哪个 Skill。
 - 调整钩子：改 `hooks/hooks.json` 的事件映射，脚本放在 `hooks/` 下并复用 `_hooklib.py`。
 - 交付前跑一遍相关 `evals/` 脚本，确认产物仍落在约定位置。
