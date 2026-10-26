@@ -2,16 +2,20 @@
 """合并 rustdoc JSON 与 syn AST 事实，生成函数文档骨架、未确认字段清单，并校验覆盖率。
 
 用法：
-    python3 generate_fn_docs.py --rustdoc <rustdoc.json> --ast <ast.json> -o <输出目录>
-    python3 generate_fn_docs.py --verify --rustdoc <rustdoc.json> [--ast <ast.json>]
+    python3 generate_fn_docs.py --rustdoc <rustdoc.json> --ast <ast.json> -o <输出目录> \
+        [--docs-root docs/data-struct-and-interface]
+    python3 generate_fn_docs.py --verify --rustdoc <rustdoc.json> [--ast <ast.json>] \
+        [--docs-root <模块文档根目录>]
 
 非校验模式输出到 -o 目录：facts.md（事实包）、skeleton.md（固定格式骨架）、
-未确认字段清单.md（无法从输入证实的字段）。校验模式打印覆盖率报告并以非零状态码
-表示存在缺失章节、残留「未确认」占位或 rustdoc JSON 已过期。
+未确认字段清单.md（无法从输入证实的字段）；同时按模块生成
+<docs-root>/<模块名>/README.md，收录公有接口、公有/私有函数的出入参以及数据结构。
+校验模式打印覆盖率报告并以非零状态码表示存在缺失章节、残留「未确认」占位、
+rustdoc JSON 已过期或模块文档缺失覆盖。
 
 约束：
     - 签名、可见性、参数与返回值类型、doc 注释只取自 rustdoc JSON；
-    - AST 只补函数体分支、错误分支、调用关系与源码 doc 一致性信息；
+    - AST 只补函数体分支、错误分支、调用关系、私有函数与数据结构；
     - 本脚本不生成语义，参数含义、错误码、返回值语义一律标记为未确认。
 """
 
@@ -60,6 +64,7 @@ class FunctionDoc:
     docs: str
     sections: dict[str, str]
     ast: Optional[dict] = None
+    owner: Optional[str] = None
     notes: list[str] = field(default_factory=list)
 
 
@@ -571,6 +576,7 @@ def collect_functions(data: dict) -> list[FunctionDoc]:
                 returns=returns,
                 docs=docs_text,
                 sections=sections,
+                owner=trait_parents.get(item_key),
                 notes=notes,
             )
         )
@@ -628,6 +634,385 @@ def _as_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def module_key_from_rustdoc_path(path: str) -> str:
+    """把 rustdoc 的完整路径转换为模块键（crate::a::b）。
+
+    rustdoc 路径最后一段可能是函数、方法或类型；对 impl / trait 方法，
+    末尾的类型名按 Rust 命名习惯（首字母大写）剔除，避免生成以类型为名的伪模块目录。
+    """
+    parts = [part for part in (path or "").split("::") if part]
+    if len(parts) <= 1:
+        return "crate"
+    module_parts = parts[:-1]
+    while len(module_parts) > 1 and module_parts[-1][:1].isupper():
+        module_parts.pop()
+    module_parts[0] = "crate"
+    return "::".join(module_parts)
+
+
+def module_dir_name(module_path: str) -> str:
+    """把模块键转换为 docs 下的相对目录：crate::a::b -> a/b，crate -> crate。"""
+    parts = [part for part in (module_path or "").split("::") if part and part != "crate"]
+    return "/".join(parts) if parts else "crate"
+
+
+def display_path(path: str) -> str:
+    """把 rustdoc 路径的 crate 名替换为 crate，保持模块文档内路径一致。"""
+    parts = [part for part in (path or "").split("::") if part]
+    if not parts:
+        return "crate"
+    parts[0] = "crate"
+    return "::".join(parts)
+
+
+def collect_interfaces(data: dict) -> list[dict]:
+    """提取公有 trait 接口：路径、说明与包含的方法名。"""
+    index = data.get("index")
+    if not isinstance(index, dict):
+        return []
+    paths = data.get("paths") or {}
+    interfaces: list[dict] = []
+    for item_id, item in index.items():
+        if not isinstance(item, dict):
+            continue
+        inner = item.get("inner") or {}
+        trait_data = inner.get("trait")
+        if not isinstance(trait_data, dict):
+            continue
+        if item.get("visibility") != "public":
+            continue
+        name = item.get("name")
+        if not isinstance(name, str) or not name:
+            continue
+        methods: list[str] = []
+        for child_id in trait_data.get("items") or []:
+            child = index.get(str(child_id))
+            if not isinstance(child, dict):
+                continue
+            if "function" not in (child.get("inner") or {}):
+                continue
+            child_name = child.get("name")
+            if isinstance(child_name, str) and child_name:
+                methods.append(child_name)
+        docs = item.get("docs")
+        docs_text = docs if isinstance(docs, str) else ""
+        interfaces.append(
+            {
+                "path": canonical_path(str(item_id), item, paths) or name,
+                "name": name,
+                "summary": split_sections(docs_text).get("summary", ""),
+                "methods": methods,
+            }
+        )
+    interfaces.sort(key=lambda entry: entry["path"])
+    return interfaces
+
+
+def _ast_key(entry: dict) -> tuple[str, int, str]:
+    return (
+        str(entry.get("file") or ""),
+        _as_int(entry.get("line")),
+        str(entry.get("name") or ""),
+    )
+
+
+def collect_internal_functions(
+    ast_functions: list[dict], public_functions: list[FunctionDoc]
+) -> list[dict]:
+    """非公有 API 函数：未出现在 rustdoc 公有函数中的 AST 函数（含 pub(crate) 与私有函数）。"""
+    documented = {_ast_key(fn.ast) for fn in public_functions if fn.ast}
+    internal: list[dict] = []
+    for entry in ast_functions:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("is_test") or _ast_key(entry) in documented:
+            continue
+        name = entry.get("name")
+        if not isinstance(name, str) or not name:
+            continue
+        internal.append(entry)
+    return internal
+
+
+def collect_data_structures(ast_data: dict) -> list[dict]:
+    """结构体、枚举、联合体与类型别名，只取自 AST（AST 覆盖公有与私有）。"""
+    items = ast_data.get("data_structures") or []
+    if not isinstance(items, list):
+        return []
+    structures: list[dict] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if isinstance(name, str) and name:
+            structures.append(item)
+    return structures
+
+
+def build_modules(
+    functions: list[FunctionDoc],
+    internal: list[dict],
+    interfaces: list[dict],
+    structures: list[dict],
+) -> dict[str, dict]:
+    """按 Rust 模块聚合公有接口、公有函数、私有函数与数据结构。"""
+    modules: dict[str, dict] = {}
+
+    def ensure(module_path: str) -> dict:
+        return modules.setdefault(
+            module_path,
+            {
+                "public_functions": [],
+                "internal_functions": [],
+                "interfaces": [],
+                "data_structures": [],
+            },
+        )
+
+    for fn in functions:
+        ast_module = (fn.ast or {}).get("module_path")
+        if isinstance(ast_module, str) and ast_module:
+            module_path = ast_module
+        else:
+            module_path = module_key_from_rustdoc_path(fn.owner or fn.path)
+        ensure(module_path)["public_functions"].append(fn)
+
+    for entry in internal:
+        module_path = entry.get("module_path")
+        key = module_path if isinstance(module_path, str) and module_path else "crate"
+        ensure(key)["internal_functions"].append(entry)
+
+    for interface in interfaces:
+        ensure(module_key_from_rustdoc_path(interface["path"]))["interfaces"].append(interface)
+
+    for structure in structures:
+        module_path = structure.get("module_path")
+        key = module_path if isinstance(module_path, str) and module_path else "crate"
+        ensure(key)["data_structures"].append(structure)
+
+    for bundle in modules.values():
+        bundle["public_functions"].sort(key=lambda fn: (fn.path, fn.line))
+        bundle["internal_functions"].sort(
+            key=lambda entry: (
+                str(entry.get("file") or ""),
+                _as_int(entry.get("line")),
+                str(entry.get("name") or ""),
+            )
+        )
+        bundle["interfaces"].sort(key=lambda entry: entry["path"])
+        bundle["data_structures"].sort(
+            key=lambda entry: (
+                str(entry.get("file") or ""),
+                _as_int(entry.get("line")),
+                str(entry.get("name") or ""),
+            )
+        )
+    return modules
+
+
+def summary_line(text: str) -> str:
+    for line in (text or "").splitlines():
+        if line.strip():
+            return line.strip()
+    return "—"
+
+
+def doc_line_summary(lines: list) -> str:
+    for line in lines or []:
+        if str(line).strip():
+            return str(line).strip()
+    return "—"
+
+
+def render_fn_params(params: list[Param]) -> str:
+    rendered = [f"`{param.name}: {param.ty}`" for param in params]
+    return "、".join(rendered) if rendered else "—"
+
+
+def render_ast_params(params: list) -> str:
+    rendered: list[str] = []
+    for param in params or []:
+        if not isinstance(param, dict):
+            continue
+        name = str(param.get("name") or "")
+        if not name:
+            continue
+        rendered.append(f"`{name}: {param.get('ty') or ''}`")
+    return "、".join(rendered) if rendered else "—"
+
+
+def field_text(field: dict, with_visibility: bool) -> str:
+    name = str(field.get("name") or "")
+    ty = str(field.get("ty") or "")
+    visibility = str(field.get("visibility") or "")
+    prefix = ""
+    if with_visibility:
+        if visibility == "public":
+            prefix = "pub "
+        elif visibility.startswith("pub("):
+            prefix = f"{visibility} "
+    if name.isdigit():
+        return f"{prefix}{ty}".strip()
+    return f"{prefix}{name}: {ty}".strip()
+
+
+def render_field_list(fields: list, with_visibility: bool) -> str:
+    rendered = [field_text(field, with_visibility) for field in fields or [] if isinstance(field, dict)]
+    return "、".join(rendered)
+
+
+def render_structure_fields(item: dict) -> str:
+    kind = str(item.get("kind") or "")
+    if kind == "enum":
+        rendered: list[str] = []
+        for variant in item.get("variants") or []:
+            if not isinstance(variant, dict):
+                continue
+            name = str(variant.get("name") or "")
+            variant_kind = str(variant.get("kind") or "")
+            fields = render_field_list(variant.get("fields") or [], False)
+            if variant_kind == "unit" or not fields:
+                rendered.append(name)
+            elif variant_kind == "tuple":
+                rendered.append(f"{name}({fields})")
+            else:
+                rendered.append(f"{name} {{ {fields} }}")
+        return "、".join(f"`{entry}`" for entry in rendered) if rendered else "—"
+    if kind == "type_alias":
+        alias = str(item.get("alias") or "")
+        return f"`= {alias}`" if alias else "—"
+    fields = render_field_list(item.get("fields") or [], True)
+    return f"`{fields}`" if fields else "—"
+
+
+def render_module_doc(module_path: str, bundle: dict) -> str:
+    lines = [
+        f"# 模块 {module_path}",
+        "",
+        "> 由 project-doc-sync 依据 rustdoc JSON 与 syn AST 生成：公有接口与公有函数取自 rustdoc JSON，",
+        "> 私有函数与数据结构取自 AST。不推断语义，无法证实的说明记为「—」。",
+        "",
+        "## 公有接口",
+        "",
+    ]
+
+    interfaces = bundle["interfaces"]
+    if interfaces:
+        lines.append("| 接口 | 可见性 | 方法 | 说明 |")
+        lines.append("| --- | --- | --- | --- |")
+        for interface in interfaces:
+            methods = "、".join(f"`{name}`" for name in interface["methods"]) or "—"
+            lines.append(
+                f"| `{md_cell(display_path(interface['path']))}` | public | {methods} | "
+                f"{md_cell(summary_line(interface['summary']))} |"
+            )
+    else:
+        lines.append("（无）")
+
+    lines.extend(["", "## 公有函数", ""])
+    public_functions = bundle["public_functions"]
+    if public_functions:
+        lines.append("| 函数 | 签名 | 入参 | 返回值 | 说明 |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for fn in public_functions:
+            signature, from_ast = display_signature(fn)
+            note = "（签名取自 AST，待复核）" if from_ast else ""
+            lines.append(
+                f"| `{md_cell(display_path(fn.path))}` | `{md_cell(signature)}`{note} | "
+                f"{render_fn_params(fn.params)} | `{md_cell(fn.returns)}` | "
+                f"{md_cell(summary_line(fn.sections.get('summary') or ''))} |"
+            )
+    else:
+        lines.append("（无）")
+
+    lines.extend(["", "## 私有函数", ""])
+    internal_functions = bundle["internal_functions"]
+    if internal_functions:
+        lines.append("| 函数 | 签名 | 入参 | 返回值 | 说明 |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for entry in internal_functions:
+            name = str(entry.get("name") or "")
+            location = f"{entry.get('file') or ''}:{_as_int(entry.get('line'))}"
+            lines.append(
+                f"| `{md_cell(name)}`（{md_cell(location)}） | "
+                f"`{md_cell(str(entry.get('signature') or ''))}` | "
+                f"{render_ast_params(entry.get('params') or [])} | "
+                f"`{md_cell(str(entry.get('return_type') or '()'))}` | "
+                f"{md_cell(doc_line_summary(entry.get('doc_lines') or []))} |"
+            )
+    else:
+        lines.append("（无）")
+
+    lines.extend(["", "## 数据结构", ""])
+    structures = bundle["data_structures"]
+    if structures:
+        lines.append("| 名称 | 类型 | 可见性 | 字段 / 变体 | 说明 |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for item in structures:
+            lines.append(
+                f"| `{md_cell(str(item.get('name') or ''))}` | "
+                f"{md_cell(str(item.get('kind') or ''))} | "
+                f"{md_cell(str(item.get('visibility') or ''))} | "
+                f"{render_structure_fields(item)} | "
+                f"{md_cell(doc_line_summary(item.get('doc_lines') or []))} |"
+            )
+    else:
+        lines.append("（无）")
+
+    return "\n".join(lines) + "\n"
+
+
+def write_module_docs(docs_root: Path, modules: dict[str, dict]) -> list[Path]:
+    written: list[Path] = []
+    for module_path in sorted(modules):
+        bundle = modules[module_path]
+        if not has_module_content(bundle):
+            continue
+        target = docs_root / module_dir_name(module_path) / "README.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(render_module_doc(module_path, bundle), encoding="utf-8")
+        written.append(target)
+        print(f"模块文档：{target}")
+    return written
+
+
+def has_module_content(bundle: dict) -> bool:
+    return any(
+        bundle[key]
+        for key in ("public_functions", "internal_functions", "interfaces", "data_structures")
+    )
+
+
+def verify_module_docs(docs_root: Path, modules: dict[str, dict]) -> list[str]:
+    errors: list[str] = []
+    for module_path in sorted(modules):
+        bundle = modules[module_path]
+        if not has_module_content(bundle):
+            continue
+        target = docs_root / module_dir_name(module_path) / "README.md"
+        if not target.is_file():
+            errors.append(f"模块 `{module_path}`：缺少模块文档 `{target}`")
+            continue
+        text = target.read_text(encoding="utf-8")
+        for fn in bundle["public_functions"]:
+            if f"`{display_path(fn.path)}`" not in text:
+                errors.append(f"模块 `{module_path}`：模块文档未收录公有函数 `{fn.path}`")
+        for entry in bundle["internal_functions"]:
+            name = str(entry.get("name") or "")
+            if f"`{name}`" not in text:
+                errors.append(f"模块 `{module_path}`：模块文档未收录私有函数 `{name}`")
+        for interface in bundle["interfaces"]:
+            if f"`{display_path(interface['path'])}`" not in text:
+                errors.append(
+                    f"模块 `{module_path}`：模块文档未收录公有接口 `{interface['path']}`"
+                )
+        for item in bundle["data_structures"]:
+            name = str(item.get("name") or "")
+            if f"`{name}`" not in text:
+                errors.append(f"模块 `{module_path}`：模块文档未收录数据结构 `{name}`")
+    return errors
 
 
 def collect_gaps(fn: FunctionDoc) -> list[Gap]:
@@ -915,7 +1300,9 @@ def write_outputs(
     print(f"未确认字段清单：{gaps_path}")
 
 
-def run_verify(functions: list[FunctionDoc]) -> int:
+def run_verify(
+    functions: list[FunctionDoc], modules: dict[str, dict], docs_root: Path
+) -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
@@ -954,7 +1341,12 @@ def run_verify(functions: list[FunctionDoc]) -> int:
         if not (fn.sections.get("examples") or "").strip():
             warnings.append(f"{prefix}：缺少 # Examples（建议补充并编译验证）")
 
-    print(f"覆盖率校验：{len(functions)} 个公有函数")
+    errors.extend(verify_module_docs(docs_root, modules))
+
+    print(
+        f"覆盖率校验：{len(functions)} 个公有函数，{len(modules)} 个模块"
+        f"（模块文档根目录：{docs_root}）"
+    )
     if errors:
         print(f"\n错误 {len(errors)} 项：")
         for item in errors:
@@ -977,6 +1369,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rustdoc", required=True, help="rustdoc JSON 路径")
     parser.add_argument("--ast", help="ast_inspect.rs 输出的 AST 事实 JSON 路径")
     parser.add_argument("-o", "--out", help="事实包 / 骨架 / 未确认清单的输出目录")
+    parser.add_argument(
+        "--docs-root",
+        default="docs/data-struct-and-interface",
+        help="按模块分类的接口与数据结构文档根目录（默认 docs/data-struct-and-interface）",
+    )
+    parser.add_argument(
+        "--no-module-docs",
+        action="store_true",
+        help="只生成事实包与骨架，不写按模块分类的接口与数据结构文档",
+    )
     parser.add_argument("--verify", action="store_true", help="只校验覆盖率，不写文件")
     return parser
 
@@ -992,10 +1394,19 @@ def main(argv: Optional[list[str]] = None) -> int:
         raise SystemExit("AST JSON 的 functions 字段必须是数组")
 
     functions = collect_functions(rustdoc_data)
-    attach_ast(functions, [entry for entry in ast_functions if isinstance(entry, dict)])
+    ast_entries = [entry for entry in ast_functions if isinstance(entry, dict)]
+    attach_ast(functions, ast_entries)
+
+    modules = build_modules(
+        functions,
+        collect_internal_functions(ast_entries, functions),
+        collect_interfaces(rustdoc_data),
+        collect_data_structures(ast_data),
+    )
+    docs_root = Path(args.docs_root)
 
     if args.verify:
-        return run_verify(functions)
+        return run_verify(functions, modules, docs_root)
 
     if not args.out:
         print("非校验模式必须指定 -o/--out", file=sys.stderr)
@@ -1008,8 +1419,12 @@ def main(argv: Optional[list[str]] = None) -> int:
             gaps[fn.path] = fn_gaps
 
     write_outputs(Path(args.out), functions, gaps)
+    if not args.no_module_docs:
+        write_module_docs(docs_root, modules)
     unresolved = sum(len(items) for items in gaps.values())
-    print(f"完成：{len(functions)} 个公有函数，{unresolved} 项未确认字段。")
+    print(
+        f"完成：{len(functions)} 个公有函数，{len(modules)} 个模块，{unresolved} 项未确认字段。"
+    )
     return 0
 
 

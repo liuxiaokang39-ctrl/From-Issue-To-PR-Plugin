@@ -20,7 +20,9 @@
 //! - `error_returns`：`?`、`return Err(...)`、`Err(...)` 构造等错误分支位置；
 //! - `panics`：panic 类宏与 unwrap / expect 调用；
 //! - `calls`：函数体内出现的调用；
-//! - `doc_lines`：源码中的原始 doc 行，用于与 rustdoc JSON 的 docs 做一致性校验。
+//! - `doc_lines`：源码中的原始 doc 行，用于与 rustdoc JSON 的 docs 做一致性校验；
+//! - `data_structures`：结构体、枚举、联合体与类型别名的可见性、字段/变体、泛型与 doc 行，
+//!   供生成 `docs/data-struct-and-interface/<模块名>/` 下的数据结构信息。
 
 use quote::ToTokens;
 use serde::Serialize;
@@ -75,11 +77,43 @@ struct FnInfo {
     calls: Vec<String>,
 }
 
+#[derive(Serialize, Clone, Default)]
+struct FieldInfo {
+    name: String,
+    ty: String,
+    visibility: String,
+    doc_lines: Vec<String>,
+}
+
+#[derive(Serialize, Clone, Default)]
+struct VariantInfo {
+    name: String,
+    kind: String,
+    fields: Vec<FieldInfo>,
+    doc_lines: Vec<String>,
+}
+
+#[derive(Serialize, Clone)]
+struct DataStructureInfo {
+    name: String,
+    kind: String,
+    module_path: String,
+    file: String,
+    line: usize,
+    visibility: String,
+    generics: String,
+    alias: String,
+    doc_lines: Vec<String>,
+    fields: Vec<FieldInfo>,
+    variants: Vec<VariantInfo>,
+}
+
 #[derive(Serialize)]
 struct Output {
     crate_root: String,
     generated_files: Vec<String>,
     functions: Vec<FnInfo>,
+    data_structures: Vec<DataStructureInfo>,
 }
 
 fn tidy(text: &str) -> String {
@@ -172,6 +206,53 @@ fn doc_lines(attrs: &[syn::Attribute]) -> Vec<String> {
     lines
 }
 
+fn generics_text(generics: &syn::Generics) -> String {
+    tidy(&generics.to_token_stream().to_string())
+}
+
+fn collect_fields(fields: &syn::Fields) -> Vec<FieldInfo> {
+    match fields {
+        syn::Fields::Named(named) => collect_named_fields(named),
+        syn::Fields::Unnamed(unnamed) => unnamed
+            .unnamed
+            .iter()
+            .enumerate()
+            .map(|(index, field)| FieldInfo {
+                name: index.to_string(),
+                ty: tidy(&field.ty.to_token_stream().to_string()),
+                visibility: visibility_text(&field.vis),
+                doc_lines: doc_lines(&field.attrs),
+            })
+            .collect(),
+        syn::Fields::Unit => Vec::new(),
+    }
+}
+
+fn fields_kind(fields: &syn::Fields) -> &'static str {
+    match fields {
+        syn::Fields::Named(_) => "struct",
+        syn::Fields::Unnamed(_) => "tuple",
+        syn::Fields::Unit => "unit",
+    }
+}
+
+fn collect_named_fields(fields: &syn::FieldsNamed) -> Vec<FieldInfo> {
+    fields
+        .named
+        .iter()
+        .map(|field| FieldInfo {
+            name: field
+                .ident
+                .as_ref()
+                .map(|ident| ident.to_string())
+                .unwrap_or_default(),
+            ty: tidy(&field.ty.to_token_stream().to_string()),
+            visibility: visibility_text(&field.vis),
+            doc_lines: doc_lines(&field.attrs),
+        })
+        .collect()
+}
+
 fn other_attrs(attrs: &[syn::Attribute]) -> Vec<String> {
     attrs
         .iter()
@@ -248,6 +329,7 @@ struct Collector {
     current_container: Option<String>,
     stack: Vec<FnInfo>,
     functions: Vec<FnInfo>,
+    data_structures: Vec<DataStructureInfo>,
 }
 
 impl Collector {
@@ -341,6 +423,92 @@ impl<'ast> syn::visit::Visit<'ast> for Collector {
         let previous = self.current_container.replace(node.ident.to_string());
         syn::visit::visit_item_trait(self, node);
         self.current_container = previous;
+    }
+
+    fn visit_item_struct(&mut self, node: &'ast syn::ItemStruct) {
+        if self.stack.is_empty() && !is_cfg_test(&node.attrs) {
+            self.data_structures.push(DataStructureInfo {
+                name: node.ident.to_string(),
+                kind: "struct".to_string(),
+                module_path: self.module_path.clone(),
+                file: self.file.clone(),
+                line: node.ident.span().start().line,
+                visibility: visibility_text(&node.vis),
+                generics: generics_text(&node.generics),
+                alias: String::new(),
+                doc_lines: doc_lines(&node.attrs),
+                fields: collect_fields(&node.fields),
+                variants: Vec::new(),
+            });
+        }
+        syn::visit::visit_item_struct(self, node);
+    }
+
+    fn visit_item_enum(&mut self, node: &'ast syn::ItemEnum) {
+        if self.stack.is_empty() && !is_cfg_test(&node.attrs) {
+            let variants = node
+                .variants
+                .iter()
+                .map(|variant| VariantInfo {
+                    name: variant.ident.to_string(),
+                    kind: fields_kind(&variant.fields).to_string(),
+                    fields: collect_fields(&variant.fields),
+                    doc_lines: doc_lines(&variant.attrs),
+                })
+                .collect();
+            self.data_structures.push(DataStructureInfo {
+                name: node.ident.to_string(),
+                kind: "enum".to_string(),
+                module_path: self.module_path.clone(),
+                file: self.file.clone(),
+                line: node.ident.span().start().line,
+                visibility: visibility_text(&node.vis),
+                generics: generics_text(&node.generics),
+                alias: String::new(),
+                doc_lines: doc_lines(&node.attrs),
+                fields: Vec::new(),
+                variants,
+            });
+        }
+        syn::visit::visit_item_enum(self, node);
+    }
+
+    fn visit_item_union(&mut self, node: &'ast syn::ItemUnion) {
+        if self.stack.is_empty() && !is_cfg_test(&node.attrs) {
+            self.data_structures.push(DataStructureInfo {
+                name: node.ident.to_string(),
+                kind: "union".to_string(),
+                module_path: self.module_path.clone(),
+                file: self.file.clone(),
+                line: node.ident.span().start().line,
+                visibility: visibility_text(&node.vis),
+                generics: generics_text(&node.generics),
+                alias: String::new(),
+                doc_lines: doc_lines(&node.attrs),
+                fields: collect_named_fields(&node.fields),
+                variants: Vec::new(),
+            });
+        }
+        syn::visit::visit_item_union(self, node);
+    }
+
+    fn visit_item_type(&mut self, node: &'ast syn::ItemType) {
+        if self.stack.is_empty() && !is_cfg_test(&node.attrs) {
+            self.data_structures.push(DataStructureInfo {
+                name: node.ident.to_string(),
+                kind: "type_alias".to_string(),
+                module_path: self.module_path.clone(),
+                file: self.file.clone(),
+                line: node.ident.span().start().line,
+                visibility: visibility_text(&node.vis),
+                generics: generics_text(&node.generics),
+                alias: tidy(&node.ty.to_token_stream().to_string()),
+                doc_lines: doc_lines(&node.attrs),
+                fields: Vec::new(),
+                variants: Vec::new(),
+            });
+        }
+        syn::visit::visit_item_type(self, node);
     }
 
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
@@ -627,6 +795,7 @@ fn main() {
     files.dedup();
 
     let mut functions: Vec<FnInfo> = Vec::new();
+    let mut data_structures: Vec<DataStructureInfo> = Vec::new();
     let mut generated_files: Vec<String> = Vec::new();
 
     for file in &files {
@@ -653,12 +822,20 @@ fn main() {
             current_container: None,
             stack: Vec::new(),
             functions: Vec::new(),
+            data_structures: Vec::new(),
         };
         syn::visit::Visit::visit_file(&mut collector, &syntax);
         functions.extend(collector.functions);
+        data_structures.extend(collector.data_structures);
     }
 
     functions.sort_by(|left, right| {
+        left.file
+            .cmp(&right.file)
+            .then(left.line.cmp(&right.line))
+            .then(left.name.cmp(&right.name))
+    });
+    data_structures.sort_by(|left, right| {
         left.file
             .cmp(&right.file)
             .then(left.line.cmp(&right.line))
@@ -669,6 +846,7 @@ fn main() {
         crate_root,
         generated_files,
         functions,
+        data_structures,
     };
     let json = match serde_json::to_string_pretty(&data) {
         Ok(json) => json,
@@ -693,10 +871,11 @@ fn main() {
                 std::process::exit(1);
             }
             eprintln!(
-                "AST 事实：{}（{} 个文件，{} 个函数）",
+                "AST 事实：{}（{} 个文件，{} 个函数，{} 个数据结构）",
                 path.display(),
                 data.generated_files.len(),
-                data.functions.len()
+                data.functions.len(),
+                data.data_structures.len()
             );
         }
         None => println!("{}", json),

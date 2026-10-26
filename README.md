@@ -33,7 +33,7 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 | 编码实现 | `implementer` | 开发文档与流程图、任务清单、代码库 | 逐项实现的代码改动 |
 | 测试流程与资源准备 | `test-planner` | 开发文档、需求、任务报告、工作区代码 | `docs/dev-docs/<开发序号>/test-process/` 下三份测试流程文档（单元白盒、集成白盒、真实部署黑盒），以及执行所需的测试框架、运行时、依赖、测试数据与外部服务等资源 |
 | 按流程执行测试 | `test-runner` | 三份测试流程文档、工作区代码 | 各场景的执行命令与结果记录；通过时产出 `docs/dev-docs/<开发序号>/test-report/测试报告.md`，设计层面无法通过时产出 `docs/dev-docs/<开发序号>/test-report/failure-report/<序号>-测试未通过报告.md` |
-| 项目文档同步 | `project-doc-sync` | 测试通过的 Rust 代码、rustdoc JSON、AST 事实、现有项目文档 | 就地更新的源码 `///` 函数文档与相关项目说明；`target/rust-fn-doc/` 下的中间产物 |
+| 项目文档同步 | `project-doc-sync` | 测试通过的 Rust 代码、rustdoc JSON、AST 事实、现有项目文档 | 就地更新的公有接口源码 `///` 文档与相关项目说明；`docs/data-struct-and-interface/<模块名>/` 下按模块保存公有接口、公有/私有函数出入参与数据结构信息；`target/rust-fn-doc/` 下的中间产物 |
 | 提交 PR | `pr-creator` | 代码改动、Issue、开发文档、测试报告 | PR 标题与描述（背景、改动摘要、验证方式、影响面、回滚方案） |
 
 产物建议命名：`docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md`、`docs/dev-docs/<开发序号>/<标题>开发文档.md` 与 `docs/dev-docs/<开发序号>/<标题>流程图.md`、`docs/dev-docs/<开发序号>/migration-info/<序号>-<迁移内容概况>.md`、`docs/dev-docs/<开发序号>/task-list/<编号>-<任务标题>.md` 与 `docs/dev-docs/<开发序号>/task-list/执行顺序.md`、`docs/dev-docs/<开发序号>/test-process/1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`、`docs/dev-docs/<开发序号>/test-report/测试报告.md`、`docs/dev-docs/<开发序号>/test-report/failure-report/<序号>-测试未通过报告.md`、`docs/dev-docs/<开发序号>/task-report/<编号>-<任务标题>.md`、`docs/dev-docs/<开发序号>/<仓库名>-<PR编号>-PR.md`。
@@ -86,10 +86,10 @@ issue-writer → dev-doc-writer → task-planner → implementer → test-planne
 
 ### `project-doc-sync` —— 项目文档同步
 
-- **职责**：在测试通过后，以 rustdoc JSON 为可信底座、syn AST 补全缺失信息，自动更新 Rust 公有函数的 `///` 文档与相关项目说明。
+- **职责**：在测试通过后，以 rustdoc JSON 为可信底座、syn AST 补全缺失信息，更新 Rust 公有接口的 `///` 文档，并按模块生成接口与数据结构文档。
 - **输入**：测试通过的 Rust 代码、rustdoc JSON、AST 事实 JSON、现有项目文档。
-- **产出**：就地更新的源码 `///`（`# Arguments`、`# Returns`、`# Errors`、`# Examples`）、相关项目说明，以及未确认字段清单；中间产物写入 `target/rust-fn-doc/`。
-- **关键行为**：签名与 doc 事实只取自 rustdoc JSON，AST 只补函数体结构、错误分支与调用关系；LLM 只做合成，不臆造参数含义、错误码、返回值语义；先用 `scripts/extract_rustdoc_json.sh` 生成 JSON，再用 `scripts/ast_inspect.rs` 补全，由 `scripts/generate_fn_docs.py` 产出事实包、骨架与未确认清单，最后用 `evals/verify_doc_coverage.sh` 校验；只同步经测试验证的代码，不修改开发文档与流程图。
+- **产出**：就地更新的公有接口源码 `///`（`# Arguments`、`# Returns`、`# Errors`、`# Examples`）、`docs/data-struct-and-interface/<模块名>/README.md`（公有接口、公有/私有函数出入参、数据结构）、相关项目说明与未确认字段清单；中间产物写入 `target/rust-fn-doc/`。
+- **关键行为**：签名与 doc 事实只取自 rustdoc JSON，AST 只补函数体结构、错误分支、调用关系、私有函数与数据结构；LLM 只做合成，不臆造参数含义、错误码、返回值语义；源码 `///` 只更新公有接口，私有函数与数据结构只进模块文档；先用 `scripts/extract_rustdoc_json.sh` 生成 JSON，再用 `scripts/ast_inspect.rs` 补全，由 `scripts/generate_fn_docs.py` 产出事实包、骨架、未确认清单与模块文档，最后用 `evals/verify_doc_coverage.sh` 校验；只同步经测试验证的代码，不修改开发文档与流程图。
 - **适用范围**：本版本仅支持 Rust，其他语言暂不支持。
 
 > 项目文档描述项目当前状态，长期维护；开发文档（`docs/dev-docs/`）指导某一次开发，具有时效性，是本次开发的迁移文档。两者不可混用。
