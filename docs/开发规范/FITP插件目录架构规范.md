@@ -1,29 +1,6 @@
-# 开发规范
+# FITP插件目录架构规范
 
-## 单个 Skill 的工作区组织规范
-
-每个 Skill 使用独立目录，以 Skill 名称命名，目录形式如下：
-
-```
-data-extract/
-├── SKILL.md
-├── scripts/
-├── references/
-├── assets/
-└── evals/
-```
-
-各组成部分的职责：
-
-| 组成部分 | 职责 |
-| --- | --- |
-| `SKILL.md` | 唯一必需文件，包含 YAML 元数据和执行指令，是 Skill 的"工作手册" |
-| `references/` | 存放 API 文档、规范、决策表等参考资料，执行时按需读取 |
-| `scripts/` | 存放确定性脚本，例如数据提取、格式校验、自动化操作 |
-| `assets/` | 存放模板、样例、配置骨架、图片等静态资源 |
-| `evals/` | 存放测试用例，用于验证 Skill 是否按预期执行 |
-
-> 说明：`references/`、`scripts/`、`assets/`、`evals/` 均为可选目录，按 Skill 实际需要创建；`SKILL.md` 为唯一必需文件。
+本规范规定 From Issue To PR（FITP）插件的目录架构：先给出标准 Codex 插件的目录基线，再说明本插件实际采用的目录结构与约定。单个 Skill 目录的组织方式见 [skill目录架构规范.md](skill目录架构规范.md)，`SKILL.md` 的内容格式见 [SKILL内容开发规范.md](SKILL内容开发规范.md)。
 
 ## 标准 Codex 插件目录架构
 
@@ -141,7 +118,10 @@ From-Issue-To-PR-Skill/
 │       ├── evals/verify_artifacts.py
 │       └── references/{GitHub-CLI.md, GitHub-submit.md}
 ├── docs/
-│   ├── 开发规范.md                   # 本文件：目录组织规范与本项目当前架构
+│   ├── 开发规范/
+│   │   ├── FITP插件目录架构规范.md   # 本文件：插件级目录架构与本项目当前结构
+│   │   ├── skill目录架构规范.md      # 单个 Skill 目录的工作区组织
+│   │   └── SKILL内容开发规范.md      # SKILL.md 的内容格式
 │   ├── 项目架构.md                   # 核心目标、状态流转、两类文档、回流路径
 │   └── install/codex.md              # Codex 安装、Hook 信任与冒烟测试
 ├── README.md                         # 插件简介、前置条件、安装与能力边界
@@ -158,28 +138,15 @@ From-Issue-To-PR-Skill/
 | `scripts/` | 插件级辅助脚本：钩子入口、公共库与 Codex 安装脚本，不放业务逻辑 | 新增插件级脚本时 |
 | `agents/` | 编排层，负责任务顺序、门禁与回流，不承载具体阶段规则 | 阶段顺序或门禁变化时 |
 | `commands/` | 用户的阶段入口，正文只声明调用哪个 Skill，不重复 Skill 内规则 | 新增阶段或调整命令参数时 |
-| `skills/` | 8 个阶段 Skill 的实际实现，每个目录内部按上一节规范组织 | 阶段职责变化时 |
+| `skills/` | 8 个阶段 Skill 的实际实现，每个目录内部按 skill目录架构规范组织 | 阶段职责变化时 |
 | `.agents/plugins/` | 市场登记信息，供分发与发现，不参与运行时加载 | 发布或版本变更时 |
 | `docs/` | 插件自身的规范、架构与安装文档，不放使用者项目的产物 | 规范或架构变化时 |
 | `README.md` | 面向使用者的定位、前置条件、安装与能力边界 | 对外可见行为变化时 |
 
-### 各 Skill 目录现状
-
-| Skill | 包含的可选目录 | 备注 |
-| --- | --- | --- |
-| `issue-writer` | `assets/`、`evals/`、`references/` | 无 `scripts/` |
-| `dev-doc-writer` | `assets/`、`evals/`、`references/` | 无 `scripts/` |
-| `task-planner` | `assets/`、`evals/`、`references/`、`scripts/` | 唯一含拓扑排序脚本的阶段 |
-| `implementer` | `evals/`、`references/` | 无 `assets/`、`scripts/` |
-| `test-planner` | `assets/`、`evals/`、`references/` | 无 `scripts/` |
-| `test-runner` | `assets/`、`evals/` | 无 `references/`、`scripts/` |
-| `project-doc-sync` | `assets/`、`evals/`、`scripts/` | 唯一含 `.rs` 与 `.sh` 脚本的阶段，无 `references/` |
-| `pr-creator` | `evals/`、`references/` | 无 `assets/`、`scripts/` |
-
 ### 目录约定
 
 - 使用者项目的产物一律落在其 `docs/dev-docs/<开发序号>/` 或 `docs/data-struct-and-interface/` 下，不写入本仓库。
-- 本仓库 `docs/` 只维护插件自身的规范、架构与安装说明。
+- 本仓库 `docs/` 只维护插件自身的规范、架构与安装说明；开发规范统一放在 `docs/开发规范/` 下。
 - `scripts/__pycache__/` 为 Python 运行缓存，不属于源码，已由 `.gitignore` 的 `__pycache__/`、`*.pyc` 规则排除。
 - 新增 Skill 时在 `skills/` 下建同名目录并至少包含 `SKILL.md`；是否补 `references/`、`assets/`、`scripts/`、`evals/` 由该阶段是否需要决定。
 - 新增命令时在 `commands/` 下建 Markdown 文件，frontmatter 写 `description` 与 `argument-hint`，正文只声明调用哪个 Skill。
