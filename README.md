@@ -18,7 +18,7 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 
 ## 安装
 
-安装步骤由 Agent 按 [docs/install/codex.md](docs/install/codex.md) 执行。把下面这句话发给 Agent 即可：
+安装步骤由 Agent 按 [docs/install/codex.md](docs/install/codex.md) 执行。请先下载 [docs/install/codex.md](docs/install/codex.md)，然后将该文件与下面这句话一起发给 Agent：
 
 ```
 请读取 docs/install/codex.md，按其中步骤为我安装 From Issue To PR 插件。
@@ -31,7 +31,14 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 
 ## 最小可运行示例
 
-走完整流程 `/prompts:workflow 需求描述 开发序号`
+安装完成后，直接在对话框输入下面这行即可使用本插件：
+
+```
+/prompts:workflow 需求描述 开发序号
+```
+
+- `需求描述`：你想干什么，用一句话写清楚。
+- `开发序号`：一个阿拉伯数字（如 `1`、`2`、`3`）。
 
 ## 许可证
 
