@@ -33,10 +33,10 @@ codex plugin list --json
 
 ### 从 GitHub 安装
 
-当前 Codex 版本位于 `beta/codex-plugin-0.1.0` 分支，需用 `--ref` 固定：
+当前 Codex 版本位于 `beta/codex-plugin-0.1.1` 分支，需用 `--ref` 固定：
 
 ```powershell
-codex plugin marketplace add liuxiaokang39-ctrl/From-Issue-To-PR-Skill --ref beta/codex-plugin-0.1.0
+codex plugin marketplace add liuxiaokang39-ctrl/From-Issue-To-PR-Skill --ref beta/codex-plugin-0.1.1
 codex plugin add from-issue-to-pr@from-issue-to-pr
 ```
 
@@ -128,4 +128,4 @@ python scripts/install_codex.py --scope project --project <项目根>
 - Hook 只覆盖 Codex 的 `Bash`（`exec_command`）与 `apply_patch`；通过其他工具或脚本
   写文件时不会触发产物校验。
 - 插件不改变 Codex 的沙箱与审批设置，也不替代 Codex 自身的权限确认。
-- `main` 分支是 Codex 的最新开发分支，`beta/codex-plugin-0.1.0` 是插件的版本分支。
+- `main` 分支是 Codex 的最新开发分支，`beta/codex-plugin-0.1.1` 是插件的版本分支。
