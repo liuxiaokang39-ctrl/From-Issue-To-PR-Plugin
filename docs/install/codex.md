@@ -11,13 +11,13 @@
 | 依赖 | 用途 | 必需性 |
 | --- | --- | --- |
 | 支持插件的 Codex CLI（`codex plugin` 可用） | 安装与加载插件 | 必需 |
-| Python 3.9+ | hooks 与各 Skill 的 `evals/` 脚本 | 必需 |
+| Python 3.9+ | `scripts/` 下的 Hook 脚本与各 Skill 的 `evals/` 脚本 | 必需 |
 | git | 分支、提交与 PR 流程 | 必需 |
 | GitHub CLI（`gh`），已 `gh auth login` | `issue-writer` / `pr-creator` 阶段 | 后续阶段必需 |
 | Rust 工具链（`rust-script`） | 生成 rustdoc JSON 与 AST 事实 | 仅 `project-doc-sync` 阶段 |
 
-`hooks/hooks.json` 默认以 `python` 调用脚本。Windows 下通常可用；若系统只有 `python3`，
-安装前把 [hooks/hooks.json](../../hooks/hooks.json) 中的命令改成 `python3`。
+根目录的 `hooks.json` 默认以 `python` 调用脚本。Windows 下通常可用；若系统只有 `python3`，
+安装前把 [hooks.json](../../hooks.json) 中的命令改成 `python3`。
 
 ## 安装
 
@@ -42,6 +42,36 @@ codex plugin add from-issue-to-pr@from-issue-to-pr
 
 两条 `add` 命令可重复执行，重复执行不会产生第二份注册。
 
+## 命令与 Agent 的接入
+
+Codex 不直接加载插件的 `commands/` 与 `agents/`，安装时需把它们复制到 Codex 的约定目录。
+
+### commands/ → `~/.codex/prompts/`
+
+安装脚本 `scripts/install_codex.py` 会把 `commands/` 下的命令文件复制到 `~/.codex/prompts/`。Codex 会从这个目录读取提示词，并以 `/prompts:xxx` 的形式暴露为可调用的入口；`xxx` 为去掉 `.md` 的文件名，例如 `workflow.md` 对应 `/prompts:workflow`。
+
+若当前 Codex 版本已移除 custom prompts，则直接用 `$issue-writer` 等 Skill 名调用对应阶段，功能等价。
+
+### agents/ → `~/.codex/agents/` 或项目 `.codex/agents/`
+
+脚本同时把 `agents/*.toml` 复制到用户级 `~/.codex/agents/`，或复制到项目的 `.codex/agents/` 目录下，并在 `config.toml` 中注册 `[agents.<role>]`（`description` 与 `config_file`），同时确保 `features.multi_agent = true`。Codex 的子代理系统会从这些配置目录加载角色定义。
+
+执行安装脚本：
+
+用户级（`~/.codex/prompts`、`~/.codex/agents`、`~/.codex/config.toml`）：
+
+```powershell
+python scripts/install_codex.py --scope user
+```
+
+项目级（Agent 与 config 落在项目 `.codex/`，prompts 仍在用户级）：
+
+```powershell
+python scripts/install_codex.py --scope project --project <项目根>
+```
+
+常用参数：`--dry-run` 只打印计划不写入；`--prompts-dir` / `--agents-dir` / `--config` 覆盖默认目录。脚本可重复执行：prompts 文件会覆盖更新，已注册的 `[agents.<role>]` 与 `features.multi_agent` 不会重复写入。
+
 ## 重启与加载
 
 1. 让用户重启 Codex。
@@ -57,11 +87,11 @@ codex plugin add from-issue-to-pr@from-issue-to-pr
 | 组件 | Codex 是否加载 | 使用方式 |
 | --- | --- | --- |
 | `skills/`（8 个阶段 Skill） | 是 | `$issue-writer`、`$dev-doc-writer`、`$task-planner` 等 |
-| `hooks/hooks.json`（4 个生命周期 Hook） | 是 | 经 `/hooks` 信任后自动触发 |
-| `commands/`（9 个命令） | 否 | 这是 Claude Code 组件；Codex 直接调用对应 Skill |
-| `agents/workflow-orchestrator.md` | 否 | Codex 不支持插件内置 Agent；按阶段顺序手工串联 Skill |
+| `hooks.json`（4 个生命周期 Hook） | 是 | 经 `/hooks` 信任后自动触发 |
+| `commands/`（9 个命令） | 安装时复制到 `~/.codex/prompts/` | 复制后以 `/prompts:xxx` 调用，例如 `/prompts:workflow` |
+| `agents/workflow-orchestrator.md` | 安装时复制 TOML 到 `~/.codex/agents/` 或项目 `.codex/agents/` | 由 Codex 子代理系统加载角色定义 |
 
-Codex 中没有 `/from-issue-to-pr:workflow` 命令。走完整流程时，让 Codex 依次调用
+走完整流程时，可用 `/prompts:workflow 需求描述 开发序号`，也可让 Codex 依次调用
 `$issue-writer` → `$dev-doc-writer` → `$task-planner` → `$implementer` → `$test-planner`
 → `$test-runner` → `$project-doc-sync` → `$pr-creator`，并在各 Skill 定义的人工门禁处
 停下来询问用户。

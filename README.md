@@ -1,144 +1,47 @@
 # From Issue To PR
 
-> 一个把「模糊需求」推进到「可合并 PR」的插件：确认需求 → 产出开发文档 → 拆分任务并实现 → 测试 → 同步项目文档 → 提交 PR。
+From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求，按 8 个固定阶段推进到可合并的 PR，解决「需求到代码之间缺少可追溯产物与统一判定标准」的问题。
 
-## 插件简介
-
-本仓库本身就是一个可安装的插件，插件清单位于 [.codex-plugin/plugin.json](.codex-plugin/plugin.json)。
-
-插件包含：
-
-- **8 个阶段 Skill**：每个 Skill 负责开发链路中的一个阶段，可独立调用，也可顺序串联；
-- **1 个编排 Agent**：`workflow-orchestrator`，按固定顺序调度 8 个 Skill，并处理门禁与失败回流；
-- **9 个命令**：8 个阶段命令 + 1 个全流程命令；
-- **4 个生命周期钩子**：会话注入上下文、拦截高危 git/gh 命令、写入产物后自动校验、收尾检查产物齐全。
-
-各阶段的产物统一落在使用者项目的 `docs/dev-docs/<开发序号>/` 下，项目文档按其既有位置就地更新。整体架构（状态流转、两类文档的区分、回流路径）见 [docs/项目架构.md](docs/项目架构.md)。
-
-## 安装
-
-### 前置依赖
+## 前置条件
 
 | 依赖 | 用途 | 必需性 |
 | --- | --- | --- |
-| Python 3.9+ | 运行 `scripts/`、`evals/` 与 hooks 脚本 | 必需 |
+| 支持插件的 Codex CLI（`codex plugin` 可用） | 安装与加载插件 | 必需 |
+| Python 3.9+ | 运行 `scripts/` 下的 Hook 脚本与各 Skill 的 `evals/` 脚本 | 必需 |
 | git | 分支、提交与 PR 流程 | 必需 |
-| GitHub CLI（`gh`），已 `gh auth login` | 创建 Issue 与 PR | `issue-writer` / `pr-creator` 阶段必需 |
+| GitHub CLI（`gh`），已执行 `gh auth login` | 创建 Issue 与 PR | `issue-writer`、`pr-creator` 阶段必需 |
 | Rust 工具链（`rust-script`） | 生成 rustdoc JSON 与 AST 事实 | 仅 `project-doc-sync` 阶段必需 |
 
-Windows 下 hooks 以 `python` 调用脚本；若环境只有 `python3`，需同步修改 [hooks/hooks.json](hooks/hooks.json) 中的命令。
+本项目不使用数据库；需要连通的只有 GitHub（通过 `gh` 访问）。
 
-### 安装方式
+根目录的 `hooks.json` 默认以 `python` 调用脚本。若系统只有 `python3`，安装前需把该文件中的命令改为 `python3`。
 
-本插件当前仅支持 Codex。`main` 分支是 Codex 的最新开发分支，`beta/codex-plugin-0.1.0` 是插件的版本分支。
+## 安装
 
-安装与加载步骤、Hook 信任与冒烟测试见 [docs/install/codex.md](docs/install/codex.md)。
-
-## 使用
-
-### 走完整流程
+安装步骤由 Agent 按 [docs/install/codex.md](docs/install/codex.md) 执行。把下面这句话发给 Agent 即可：
 
 ```
-/from-issue-to-pr:workflow 需求描述 开发序号
+请读取 docs/install/codex.md，按其中步骤为我安装 From Issue To PR 插件。
 ```
 
-或直接描述「从需求到 PR」的诉求，由 `workflow-orchestrator` Agent 接管。编排时严格按阶段推进，遇到各 Skill 内定义的人工门禁（设计终稿确认、真实部署黑盒测试审核）会停下来问你。
+安装完成后还需要两步：
 
-### 只走某个阶段
+1. **同意钩子**：插件安装不会自动信任 Hook。按 `docs/install/codex.md` 的指引运行 `/hooks`，逐条查看并信任 `from-issue-to-pr` 的 Hook 条目。
+2. **重启应用**：重启安装本插件的应用，使插件与 Hook 重新加载后生效。
 
-| 命令 | 阶段 | 对应 Skill |
-| --- | --- | --- |
-| `/from-issue-to-pr:issue` | 需求确认 | `issue-writer` |
-| `/from-issue-to-pr:dev-doc` | 开发文档 | `dev-doc-writer` |
-| `/from-issue-to-pr:task` | 任务拆分 | `task-planner` |
-| `/from-issue-to-pr:implement` | 编码实现 | `implementer` |
-| `/from-issue-to-pr:test-plan` | 测试流程与资源准备 | `test-planner` |
-| `/from-issue-to-pr:test-run` | 按流程执行测试 | `test-runner` |
-| `/from-issue-to-pr:doc-sync` | 项目文档同步 | `project-doc-sync` |
-| `/from-issue-to-pr:pr` | 提交 PR | `pr-creator` |
+## 最小可运行示例
 
-命令名以插件名前缀命名空间化；实际前缀以所用工具的加载方式为准。不命中命令时，用自然语言点名对应 Skill 也能触发。
-
-## 阶段与产物
-
-| 阶段 | Skill | 产物 |
-| --- | --- | --- |
-| 需求确认 | `issue-writer` | 远端 Issue + `docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md` |
-| 开发文档 | `dev-doc-writer` | 开发文档、流程图、公有接口契约；设计修订另记 `migration-info/` |
-| 任务拆分 | `task-planner` | `task-list/<编号>-<任务标题>.md` + `task-list/执行顺序.md` |
-| 编码实现 | `implementer` | 代码改动 + `task-report/<编号>-<任务标题>.md` |
-| 测试流程与资源准备 | `test-planner` | `test-process/` 下单元白盒、集成白盒、真实部署黑盒三份流程文档 + 已就绪资源 |
-| 按流程执行测试 | `test-runner` | `test-report/测试报告.md`；设计层面失败时 `test-report/failure-report/<序号>-测试未通过报告.md` |
-| 项目文档同步 | `project-doc-sync` | 源码公有接口 `///` + `docs/data-struct-and-interface/<模块名>/` 四类模块文档 |
-| 提交 PR | `pr-creator` | 远端 PR + `docs/dev-docs/<开发序号>/<仓库名>-<PR编号>-PR.md` |
-
-**设计错误判定**：若按已批准的状态流转图设计的代码无法完成需求，视为设计错误，回到开发文档阶段重新设计；非设计错误（边界条件、参数校验、状态判断疏漏）直接改代码。详见 [docs/项目架构.md](docs/项目架构.md)。
-
-## Hooks
-
-| 事件 | 行为 | 是否阻断 |
-| --- | --- | --- |
-| `SessionStart` | 注入 8 阶段工作流与已有开发序号，避免每次手工说明当前进度 | 否 |
-| `PreToolUse`（Bash） | 拦截强制推送、`reset --hard`、`clean -f`、强删分支、`checkout -- .`、`gh pr merge --admin` 等不可逆命令 | 是（deny） |
-| `PostToolUse`（Write/Edit） | 写入 `docs/dev-docs/<开发序号>/` 产物后，自动运行对应 Skill 的 `evals/` 校验并把结果回给模型 | 否 |
-| `Stop` | 检查最近一个开发序号目录的产物是否齐全，缺产物时提醒而非静默结束 | 否 |
-
-`project-doc-sync` 的校验依赖 rustdoc JSON 参数，无法从文件路径推断，故不自动触发，需在该阶段按命令说明手工运行。
-
-## 产物校验
-
-各 Skill 自带 `evals/` 校验脚本，可直接运行：
-
-```bash
-python skills/issue-writer/evals/verify_artifacts.py docs/dev-docs/001
-python skills/project-doc-sync/evals/verify_doc_coverage.sh \
-  --rustdoc target/rust-fn-doc/<crate名>.json \
-  --ast target/rust-fn-doc/ast.json \
-  --docs-root docs/data-struct-and-interface
-```
-
-## 目录结构
-
-```
-.
-├── .codex-plugin/
-│   └── plugin.json              # 插件清单
-├── README.md                    # 安装与使用说明
-├── agents/
-│   └── workflow-orchestrator.md # 主编排 Agent
-├── commands/                    # 8 个阶段命令 + 1 个全流程命令
-├── hooks/                       # 生命周期钩子配置与脚本
-│   ├── hooks.json
-│   ├── _hooklib.py
-│   ├── session_start.py
-│   ├── pre_tool_use.py
-│   ├── post_tool_use.py
-│   └── stop_check.py
-├── skills/                      # 8 个 Skill
-│   ├── issue-writer/
-│   ├── dev-doc-writer/
-│   ├── task-planner/
-│   ├── implementer/
-│   ├── test-planner/
-│   ├── test-runner/
-│   ├── project-doc-sync/
-│   └── pr-creator/
-└── docs/                        # 插件自身的开发规范、架构说明与安装文档
-    ├── 开发规范.md
-    ├── 项目架构.md
-    └── install/
-        └── codex.md
-```
-
-每个 Skill 目录按 [docs/开发规范.md](docs/开发规范.md) 组织：`SKILL.md` 为唯一必需文件；`references/` 存规范与命令参考，`assets/` 存模板样例，`scripts/` 存确定性脚本，`evals/` 存产物校验脚本。
-
-## 开发这个插件
-
-- 新增 Skill：在 `skills/` 下建同名目录并写 `SKILL.md`，[.codex-plugin/plugin.json](.codex-plugin/plugin.json) 的 `skills` 已指向 `../skills/`，无需改动清单。
-- 新增命令：在 `commands/` 下加一个 Markdown 文件，frontmatter 写 `description` 与 `argument-hint`，正文声明调用哪个 Skill。
-- 调整钩子：改 `hooks/hooks.json` 的事件映射，脚本放在 `hooks/` 下并复用 `_hooklib.py`。
-- 交付前跑一遍相关 `evals/` 脚本，确认产物仍落在约定位置。
+走完整流程 `/prompts:workflow 需求描述 开发序号`
 
 ## 许可证
 
-本项目采用 Apache-2.0 许可证，详见 [LICENSE](LICENSE)。
+本项目采用 [Apache-2.0 许可证](LICENSE)。
+
+## 它不做什么
+
+- **不替代 Codex 的权限与沙箱**：插件不改变 Codex 的沙箱与审批设置，也不替代 Codex 自身的权限确认。
+- **不自动信任 Hook**：Hook 必须由人工在 `/hooks` 中逐条审核并信任；插件升级导致 Hook 定义变化后需重新审核。
+- **命令与 Agent 不在插件内直接生效**：Codex 不加载 `commands/` 与 `agents/`，安装时需把命令文件复制到 `~/.codex/prompts/`（以 `/prompts:xxx` 调用）、把代理的 TOML 配置复制到 `~/.codex/agents/` 或项目 `.codex/agents/`（见 [docs/install/codex.md](docs/install/codex.md)）。
+- **不覆盖全部文件写入**：Hook 只监听 Codex 的 `Bash` 与 `apply_patch`；通过其他工具或脚本写文件时不会触发产物校验。
+- **不支持 Rust 以外的项目文档同步**：`project-doc-sync` 本版本仅处理 Rust 项目，其他语言的项目文档同步不在能力范围内。
+- **不合并 PR、不绕过 CI**：`pr-creator` 只创建草稿 PR 并修复 CI 报错，CI 未全部通过时不转为可评审；插件还会拦截 `gh pr merge --admin`、强制推送、`reset --hard` 等不可逆操作。
