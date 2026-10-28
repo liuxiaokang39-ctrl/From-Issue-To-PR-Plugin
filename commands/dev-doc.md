@@ -6,6 +6,7 @@ argument-hint: "[开发序号]"
 调用 `dev-doc-writer` Skill 执行本阶段。
 
 - 用户输入：`$ARGUMENTS`（开发序号）
+- 前置：`spec-manager` 已完成开发序号分配与目录骨架
 - 输入：`docs/dev-docs/<开发序号>/` 下的 Issue 留档
 - 产物：开发文档、状态流转与函数内运行流程图；设计修订另记 `migration-info/`
 - 门禁：设计终稿交由用户决定，用户方案能满足需求时优先采用

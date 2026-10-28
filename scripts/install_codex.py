@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DESCRIPTION = "按 8 个阶段把需求推进到 PR 的编排 Agent"
+DEFAULT_DESCRIPTION = "按 9 个阶段把需求推进到 PR 的编排 Agent"
 
 
 def parse_args() -> argparse.Namespace:

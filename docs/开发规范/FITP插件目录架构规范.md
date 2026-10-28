@@ -67,11 +67,12 @@ From-Issue-To-PR-Skill/
 ├── scripts/
 │   └── install_codex.py              # Codex 安装脚本：commands/ → ~/.codex/prompts，agents/*.toml 并注册 config.toml
 ├── agents/
-│   ├── workflow-orchestrator.md      # 插件级 Agent（Markdown 角色定义），按 8 阶段顺序调度并处理门禁与失败回流
+│   ├── workflow-orchestrator.md      # 插件级 Agent（Markdown 角色定义），按 9 阶段顺序调度并处理门禁与失败回流
 │   └── workflow-orchestrator.toml    # 同一 Agent 的 Codex TOML 角色配置，供安装脚本复制到 Codex agents 目录
 ├── commands/
 │   ├── workflow.md                   # 全流程命令
 │   ├── issue.md                      # A 需求确认
+│   ├── spec.md                       # A2 规范与工作区准备
 │   ├── dev-doc.md                    # B、C 状态流转流程图与开发文档
 │   ├── task.md                       # D 任务拆分
 │   ├── implement.md                  # E 编码实现
@@ -85,6 +86,12 @@ From-Issue-To-PR-Skill/
 │   │   ├── assets/issue-template.md
 │   │   ├── evals/verify_artifacts.py
 │   │   └── references/{GitHub-CLI.md, GitHub-submit.md}
+│   ├── spec-manager/
+│   │   ├── SKILL.md
+│   │   ├── assets/{rust-coding-standards-template.md, project-architecture-template.md,
+│   │   │           migration-info-template.md}
+│   │   ├── evals/verify_artifacts.py
+│   │   └── references/rust/{coding-standards-checklist.md, project-architecture-scan.md}
 │   ├── dev-doc-writer/
 │   │   ├── SKILL.md
 │   │   ├── assets/{dev-doc-template.md, flowchart-template.md, interface-contract-template.md}
@@ -144,7 +151,7 @@ From-Issue-To-PR-Skill/
 | `scripts/` | 插件级辅助脚本，存放与钩子无关的脚本（如 Codex 安装脚本），不承载业务逻辑 | 新增插件级辅助脚本时 |
 | `agents/` | 编排层，负责任务顺序、门禁与回流，不承载具体阶段规则 | 阶段顺序或门禁变化时 |
 | `commands/` | 用户的阶段入口，正文只声明调用哪个 Skill，不重复 Skill 内规则 | 新增阶段或调整命令参数时 |
-| `skills/` | 8 个阶段 Skill 的实际实现，每个目录内部按 skill目录架构规范组织 | 阶段职责变化时 |
+| `skills/` | 9 个阶段 Skill 的实际实现，每个目录内部按 skill目录架构规范组织 | 阶段职责变化时 |
 | `.agents/plugins/` | 市场登记信息，供分发与发现，不参与运行时加载 | 发布或版本变更时 |
 | `docs/` | 插件自身的规范、架构与安装文档，不放使用者项目的产物 | 规范或架构变化时 |
 | `README.md` | 面向使用者的定位、前置条件、安装与能力边界 | 对外可见行为变化时 |

@@ -9,9 +9,9 @@ from pathlib import Path
 import _hooklib as lib
 
 _STAGES = (
-    "issue-writer（需求确认）→ dev-doc-writer（开发文档）→ task-planner（任务拆分）"
-    "→ implementer（编码实现）→ test-planner（测试流程与资源）→ test-runner（执行测试）"
-    "→ project-doc-sync（项目文档同步）→ pr-creator（提交 PR）"
+    "issue-writer（需求确认）→ spec-manager（规范与工作区准备）→ dev-doc-writer（开发文档）"
+    "→ task-planner（任务拆分）→ implementer（编码实现）→ test-planner（测试流程与资源）"
+    "→ test-runner（执行测试）→ project-doc-sync（项目文档同步）→ pr-creator（提交 PR）"
 )
 
 
@@ -26,7 +26,7 @@ def _recent_indexes(project_dir: Path, limit: int = 3) -> list[str]:
 def main() -> int:
     project_dir = Path.cwd()
     lines = [
-        "【from-issue-to-pr 插件】当前工作流共 8 个阶段：",
+        "【from-issue-to-pr 插件】当前工作流共 9 个阶段：",
         _STAGES,
         "产物统一落在 docs/dev-docs/<开发序号>/，项目文档按既有位置就地更新。",
         "单阶段调用对应 Skill（如 issue-writer）；Claude Code 可用 /from-issue-to-pr:issue 等命令，Codex 用 $issue-writer 等技能名。",

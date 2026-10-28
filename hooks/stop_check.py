@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stop hook：阶段收尾时检查最近一个开发序号目录的产物是否齐全。
+"""Stop hook：阶段收尾时检查最近一个开发序号目录与项目级规范产物的齐全程度。
 
 缺产物时返回一次继续执行的决定，把清单回给模型，让其补齐后再收尾；
 `stop_hook_active` 为真时不再重复触发，避免无限循环。
@@ -15,12 +15,22 @@ import _hooklib as lib
 
 _CHECKS: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
     ("阶段 1 需求确认", (lib.ISSUE_FILE_SUFFIX,), ()),
-    ("阶段 2 开发文档", ("开发文档.md", "流程图.md"), ("migration-info",)),
-    ("阶段 3 任务拆分", (), ("task-list",)),
-    ("阶段 4 编码实现", (), ("task-report",)),
-    ("阶段 5 测试流程与资源", (), ("test-process",)),
-    ("阶段 6 执行测试", (), ("test-report",)),
-    ("阶段 8 提交 PR", (lib.PR_FILE_SUFFIX,), ()),
+    ("阶段 3 开发文档", ("开发文档.md", "流程图.md"), ("migration-info",)),
+    ("阶段 4 任务拆分", (), ("task-list",)),
+    ("阶段 5 编码实现", (), ("task-report",)),
+    ("阶段 6 测试流程与资源", (), ("test-process",)),
+    ("阶段 7 执行测试", (), ("test-report",)),
+    ("阶段 9 提交 PR", (lib.PR_FILE_SUFFIX,), ()),
+)
+
+_PROJECT_CHECKS: tuple[tuple[str, tuple[Path, ...]], ...] = (
+    (
+        "阶段 2 规范与工作区准备",
+        (
+            Path("docs") / "开发规范" / "Rust编码规范.md",
+            Path("docs") / "开发规范" / "项目目录架构规范.md",
+        ),
+    ),
 )
 
 
@@ -54,6 +64,11 @@ def main() -> int:
         absent = [d for d in dirs if not (index_dir / d).is_dir()]
         if suffixes and not _has_any(index_dir, suffixes):
             absent.append("/".join(suffixes))
+        if absent:
+            missing.append(f"{stage}：缺少 {'、'.join(absent)}")
+
+    for stage, files in _PROJECT_CHECKS:
+        absent = [str(path) for path in files if not (project_dir / path).is_file()]
         if absent:
             missing.append(f"{stage}：缺少 {'、'.join(absent)}")
 
