@@ -43,7 +43,7 @@ def public_create_order(request: CreateOrderRequest) -> Result[OrderResponse, Er
     return internal_create_order(command)
 
 
-# 公有函数：项目内全局可见，但不供外部调用
+# 公有函数：模块内可见，但不供外部调用
 def internal_create_order(command: CreateOrderCommand) -> Result[OrderResponse, Error]:
     # 白盒断言：内部契约保护
     assert command is not None  # 非空
@@ -56,7 +56,7 @@ def internal_create_order(command: CreateOrderCommand) -> Result[OrderResponse, 
     return to_order_response(order)
 
 
-# 私有函数：只在自己包内可见
+# 私有函数：仅在定义函数的文件内可见
 def build_order(command: CreateOrderCommand) -> Order:
     # 假设 command 已经通过校验
     return Order(
