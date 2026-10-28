@@ -1,10 +1,10 @@
 ---
 name: issue-writer
 description: 需求确认阶段：通过对话把模糊需求收敛为一份可评审的 Issue（背景与目标、需求列表、每项需求的期望行为与期望结果、范围边界、待确认问题），并在远端仓库创建 Issue、本地留档。
-compatibility: 依赖 git 与 gh CLI（GitHub CLI），执行时需要 git 与 gh 可用并已登录认证。
+compatibility: python3.12+；依赖 git 与 gh CLI（GitHub CLI），执行时需要 git 与 gh 可用并已登录认证。
 metadata:
   author: XK_XK
-  version: 1.0
+  version: 1.1
 ---
 
 # issue-writer
@@ -78,6 +78,22 @@ metadata:
 - 文件名：`<仓库名>-<issue编号>-issue.md`（仓库名取实际创建 Issue 的仓库名，如 `From-Issue-To-PR-Skill-12-issue.md`）；
 - 回传 Issue 链接。
 
+### 第 5 步：校验
+
+创建与留档完成后，逐项检查以下内容：
+
+- 远端 Issue 已创建，并取得 Issue 链接；
+- 本地留档文件 `docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md` 存在且内容非空，文件名中的仓库名、issue 编号与实际创建的 Issue 一致；
+- 留档内容只包含用户确认过的最新需求，无未确认内容或已过时需求。
+
+**校验脚本**：本 Skill 附带 `evals/verify_artifacts.py`（校验本地留档的位置、命名与内容非空）。此处仅**显式声明其存在**；**仅在本步骤**调用该脚本：
+
+```bash
+python evals/verify_artifacts.py docs/dev-docs/<开发序号>
+```
+
+全部检查通过后输出产物并结束本阶段；任一项不通过时，回到第 4 步修正本地留档后重新校验。
+
 ## 输入 / 输出
 
 ```text
@@ -112,6 +128,7 @@ SkillError {
 | `gh issue create` 失败 | 命令非零退出、网络或权限错误 | 重试一次；仍失败则中断，保留原始报错，仅完成本地留档，并提示用户改为手动创建（`CREATE_FAILED`） |
 | 远端仓库类型无法判断 | 无法确认主仓库或 fork，或没有远端仓库 | 中断；用 `AskUserQuestion` 询问目标仓库（「主仓库」「fork 仓库」「没有远端仓库」）后再执行（`REPO_UNKNOWN`） |
 | 开发序号未确认 | 用户未提供 `<开发序号>` | 中断；先用 `AskUserQuestion` 向用户确认序号（给出候选序号，新序号由用户通过「Other」填写）后再留档（`SEQ_MISSING`） |
+| 留档校验未通过 | 「第 5 步：校验」中任一项不满足，或 `verify_artifacts.py` 以退出码 1 结束 | 中断；回到第 4 步修正本地留档后重新校验（`VALIDATION_FAILED`） |
 
 ## 示例
 
