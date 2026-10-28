@@ -9,4 +9,4 @@ argument-hint: "[需求描述] [开发序号]"
 - 必须遵守 `skills/issue-writer/SKILL.md` 的提问规则：先确认需求是否真实需要，再逐项确认期望行为与期望结果
 - 产物：远端 Issue + `docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md`
 - 收尾校验：`python skills/issue-writer/evals/verify_artifacts.py docs/dev-docs/<开发序号>`
-- 下一阶段：`/from-issue-to-pr:dev-doc`
+- 下一阶段：`/from-issue-to-pr:spec`

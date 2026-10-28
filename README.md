@@ -1,6 +1,6 @@
 # From Issue To PR
 
-From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求，按 8 个固定阶段推进到可合并的 PR，解决「需求到代码之间缺少可追溯产物与统一判定标准」的问题。
+From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求，按 9 个固定阶段推进到可合并的 PR，解决「需求到代码之间缺少可追溯产物与统一判定标准」的问题。
 
 ## 前置条件
 
@@ -50,5 +50,5 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 - **不自动信任 Hook**：Hook 必须由人工在 `/hooks` 中逐条审核并信任；插件升级导致 Hook 定义变化后需重新审核。
 - **命令与 Agent 不在插件内直接生效**：Codex 不加载 `commands/` 与 `agents/`，安装时需把命令文件复制到 `~/.codex/prompts/`（以 `/prompts:xxx` 调用）、把代理的 TOML 配置复制到 `~/.codex/agents/` 或项目 `.codex/agents/`（见 [docs/install/codex.md](docs/install/codex.md)）。
 - **不覆盖全部文件写入**：Hook 只监听 Codex 的 `Bash` 与 `apply_patch`；通过其他工具或脚本写文件时不会触发产物校验。
-- **不支持 Rust 以外的项目文档同步**：`project-doc-sync` 本版本仅处理 Rust 项目，其他语言的项目文档同步不在能力范围内。
+- **不支持 Rust 以外的项目文档同步与开发规范生成**：`project-doc-sync` 与 `spec-manager` 本版本仅处理 Rust 项目，其他语言的对应能力不在范围内。
 - **不合并 PR、不绕过 CI**：`pr-creator` 只创建草稿 PR 并修复 CI 报错，CI 未全部通过时不转为可评审；插件还会拦截 `gh pr merge --admin`、强制推送、`reset --hard` 等不可逆操作。
