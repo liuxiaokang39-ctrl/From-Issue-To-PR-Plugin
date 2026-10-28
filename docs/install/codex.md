@@ -134,12 +134,12 @@ Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.w
 
 使用一次性测试仓库，不要写入用户正在开发的项目。Agent 向用户提供以下测试项并收集结果。
 
-1. 新建 Codex 会话，问「当前插件工作流包含哪些阶段？」。`SessionStart` 生效时，回答应包含 9 个阶段与 `docs/dev-docs/` 产物约定。
+1. 新建 Codex 会话，问「当前插件工作流包含哪些阶段？」。`SessionStart` 生效时，回答应包含 8 个阶段、`spec-manager` 管理角色与 `docs/dev-docs/` 产物约定。
 2. 在 `/plugins` 确认插件已启用；在 `/hooks` 确认 4 个事件的条目已信任。
 3. 在一次性仓库中让 Codex 执行 `git reset --hard`。`PreToolUse` 生效时应被拒绝，并给出插件拦截原因。
-4. 让 Codex 新建 `docs/dev-docs/999/smoke-issue.md`。`PostToolUse` 生效时结果中会附加 `issue-writer` 的校验输出。
+4. 让 Codex 新建 `docs/dev-docs/999/smoke-issue.md`。`PreToolUse` 生效时应被拒绝，并说明序号目录只能由 `spec-manager` 创建。
 
-测试结束后由 Agent 清理一次性产物（删除 `docs/dev-docs/999/`）。
+测试结束后无需清理：新建序号目录的写入已被拦截。
 
 ## 步骤 7：汇报安装结果 ［Agent 执行］
 
@@ -154,22 +154,22 @@ Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.w
 
 | 组件 | Codex 是否加载 | 使用方式 |
 | --- | --- | --- |
-| `skills/`（9 个阶段 Skill） | 是 | `$issue-writer`、`$spec-manager`、`$dev-doc-writer`、`$task-planner` 等 |
+| `skills/`（8 个阶段 Skill + 1 个管理角色） | 是 | `$issue-writer`、`$dev-doc-writer`、`$task-planner` 等阶段 Skill；`$spec-manager` 为管理角色 |
 | `hooks/hooks.json`（4 个生命周期 Hook） | 是 | 经 `/hooks` 信任后自动触发 |
 | `commands/`（10 个命令） | 安装时复制到 `~/.codex/prompts/` | 复制后以 `/prompts:xxx` 调用，例如 `/prompts:workflow` |
 | `agents/workflow-orchestrator.md` | 安装时复制 TOML 到 `~/.codex/agents/` 或项目 `.codex/agents/` | 由 Codex 子代理系统加载角色定义 |
 
-走完整流程时，可用 `/prompts:workflow 需求描述 开发序号`，也可让 Codex 依次调用
-`$issue-writer` → `$spec-manager` → `$dev-doc-writer` → `$task-planner` → `$implementer`
+走完整流程时，可用 `/prompts:workflow 需求描述`，也可让 Codex 依次调用
+`$issue-writer` → `$dev-doc-writer` → `$task-planner` → `$implementer`
 → `$test-planner` → `$test-runner` → `$project-doc-sync` → `$pr-creator`，并在各 Skill 定义的人工门禁处
-停下来询问用户。
+停下来询问用户。开发规范检查与开发信息分配由 `spec-manager` 管理角色承担，不占阶段序号。
 
 ## Hook 行为
 
 | 事件 | Codex 工具名 | 行为 | 是否阻断 |
 | --- | --- | --- | --- |
-| `SessionStart` | — | 注入 9 阶段工作流与已有开发序号 | 否 |
-| `PreToolUse` | `Bash` | 拦截强制推送、`reset --hard`、`clean -f`、强删分支、`gh pr merge --admin` 等不可逆命令 | 是（deny） |
+| `SessionStart` | — | 注入 8 阶段工作流、`spec-manager` 管理角色与已有开发序号 | 否 |
+| `PreToolUse` | `Bash`、`apply_patch` | 拦截强制推送、`reset --hard`、`clean -f`、强删分支、`gh pr merge --admin` 等不可逆命令；非 `spec-manager` 写入开发规范、新建序号目录、操作分支或 worktree 时拒绝 | 是（deny） |
 | `PostToolUse` | `apply_patch` | 解析补丁中的 `*** Add File:` / `*** Update File:` / `*** Delete File:` 路径，对 `docs/dev-docs/<序号>/` 产物运行对应 Skill 的 `evals/` 校验 | 否（回传校验结果） |
 | `Stop` | — | 最近一个开发序号目录缺产物时返回一次继续执行，让模型补齐或向用户说明 | 一次继续 |
 

@@ -22,7 +22,8 @@ metadata:
 2. **待同步范围可确定**：crate 名、`Cargo.toml` 路径、源码根（默认 `src`）与 crate 根文件（默认 `src/lib.rs`）可判定，且与 `Cargo.toml` 一致。无法确定时中断，使用 `AskUserQuestion` 向人类确认后再执行（`PARAM_UNKNOWN`）。
 3. **工具链与依赖可用**：`rustup` 与 nightly 工具链、`rust-script`、Python 3.12+、`rustdoc-json-to-markdown` 或 `rustdoc-llms`、`bash` 均已安装且可执行。缺失时先自行安装补齐并重试原步骤；确实无法安装时中断该项，说明缺失项、安装命令与受影响的步骤（`RESOURCE_UNAVAILABLE`）。
 4. **工作区可读写**：待同步源码文件与 `docs/data-struct-and-interface/` 可写，`target/rust-fn-doc/` 可创建。不可写时中断并提示人类检查目录与权限（`WRITE_FAILED`）。
-5. **crate 可构建**：目标 crate 在其 `Cargo.toml` 下可编译（rustdoc JSON 生成依赖构建成功）。构建失败时中断本阶段并告知人类（`EXTRACT_FAILED`）。
+5. **开发序号已登记**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值，且与测试报告所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号（`CONTEXT_MISSING`）。
+6. **crate 可构建**：目标 crate 在其 `Cargo.toml` 下可编译（rustdoc JSON 生成依赖构建成功）。构建失败时中断本阶段并告知人类（`EXTRACT_FAILED`）。
 
 ## 执行约束
 
@@ -52,6 +53,8 @@ metadata:
 - 必须：无法从 rustdoc JSON 或 AST 证实的内容一律登记到未确认字段清单，字段为：函数 | 字段 | 原因 | 需人类确认的内容 | 位置。典型来源包括参数含义缺失、返回值语义未说明、返回 `Result` 但无 `# Errors`、`# Examples` 缺失或无法验证、rustdoc JSON 与 AST 不一致、类型渲染失败（复杂泛型、`impl Trait` 等）。清单默认只在汇报中给出，不写入项目文档；人类要求留档时再写入指定位置。
 - 禁止：不臆造——不得推断或编造参数含义、错误码、返回值语义、示例运行结果；不得把「未确认」写成确定事实。
 - 禁止：修改代码逻辑、签名、可见性、测试，或修改开发文档与流程图。
+- 必须：开发规范（`docs/开发规范/`）只读；开发序号、分支名、worktree 路径与开发目录一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行。
+- 禁止：创建 / 切换 / 重命名开发分支或 worktree，禁止写入开发规范与开发上下文登记文件。
 - 禁止：在源码中残留 `<!-- 未确认：... -->` 占位标记；定稿前必须确认或删除该表述。
 - 只能修改：公有接口（公有函数、公有 trait 方法）的 `///` 注释，以及受本次改动影响的项目说明（如 `README.md` 中的相关描述）。
 - 只能写入：`docs/data-struct-and-interface/<模块名>/` 下的 4 个模块文档与 `target/rust-fn-doc/` 下的中间产物；除上述产物外不新增 API 文档副本或其他文件。
@@ -206,7 +209,7 @@ bash evals/verify_doc_coverage.sh \
 ```text
 project_doc_sync(
   crate名: string,                 // 必填：待同步的 crate 名，须与 Cargo.toml 中的包名一致
-  开发序号: string,                // 必填：docs/dev-docs/<开发序号>/ 的目录名，用于确认测试已通过
+  开发序号: string,                // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的登记值，用于确认测试已通过
   manifest路径: string,            // 必填：Cargo.toml 路径，工作区多包时必须显式指定
   源码根: string,                  // 可选：默认 src
   crate根文件: string,             // 可选：默认 src/lib.rs
@@ -248,6 +251,7 @@ SkillError {
 | 依赖缺失 | `rustup`、nightly、`rust-script`、Python 3.12+、`rustdoc-json-to-markdown` / `rustdoc-llms` 或 `bash` 不可用 | 先安装补齐并重试原步骤；安装失败时中断该项，保留原始报错并给出安装命令与受影响步骤（`RESOURCE_UNAVAILABLE`） |
 | rustdoc JSON 生成失败 | 脚本非零退出，且报错为编译错误或目标 crate 不可构建 | 中断本阶段并告知人类；不得改用 AST 签名冒充可信底座（`EXTRACT_FAILED`） |
 | rustdoc JSON 已过期 | 源码 doc 与 JSON 的 `docs` 不一致，或更换 nightly 工具链后未重新生成 | 停止合成；回到第 1 / 5 步重新生成 JSON 与 AST（`STALE_JSON`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的开发序号与测试报告所在目录不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
 | 事实来源冲突 | 骨架与 JSON 不一致，或 rustdoc JSON 与 AST 的签名 / doc 不一致 | 以 rustdoc JSON 为准并重新提取；无法消解时中断并登记未确认字段（`FACT_CONFLICT`） |
 | 存在无法证实的内容 | 事实包或模块文档出现「未确认」占位，或某字段无任何依据 | 登记到未确认字段清单；定稿前必须确认或删除该表述，不得把占位留在源码（`UNCONFIRMED_FACT`） |
 | 写入失败 | 源码文件、`docs/data-struct-and-interface/` 或 `target/rust-fn-doc/` 无法写入 | 中断并保留原始报错；提示人类检查目录与权限后重试（`WRITE_FAILED`） |

@@ -14,18 +14,19 @@ from pathlib import Path
 import _hooklib as lib
 
 _CHECKS: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
-    ("阶段 1 需求确认", (lib.ISSUE_FILE_SUFFIX,), ()),
-    ("阶段 3 开发文档", ("开发文档.md", "流程图.md"), ("migration-info",)),
-    ("阶段 4 任务拆分", (), ("task-list",)),
-    ("阶段 5 编码实现", (), ("task-report",)),
-    ("阶段 6 测试流程与资源", (), ("test-process",)),
-    ("阶段 7 执行测试", (), ("test-report",)),
-    ("阶段 9 提交 PR", (lib.PR_FILE_SUFFIX,), ()),
+    ("管理入口：开发上下文", ("开发上下文.md",), ()),
+    ("A 需求确认", (lib.ISSUE_FILE_SUFFIX,), ()),
+    ("B/C 开发文档", ("开发文档.md", "流程图.md"), ("migration-info",)),
+    ("D 任务拆分", (), ("task-list",)),
+    ("E 编码实现", (), ("task-report",)),
+    ("F 测试流程与资源", (), ("test-process",)),
+    ("G 执行测试", (), ("test-report",)),
+    ("N 提交 PR", (lib.PR_FILE_SUFFIX,), ()),
 )
 
 _PROJECT_CHECKS: tuple[tuple[str, tuple[Path, ...]], ...] = (
     (
-        "阶段 2 规范与工作区准备",
+        "管理入口：开发规范",
         (
             Path("docs") / "开发规范" / "Rust编码规范.md",
             Path("docs") / "开发规范" / "项目目录架构规范.md",

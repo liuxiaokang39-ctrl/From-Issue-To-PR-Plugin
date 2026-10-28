@@ -18,7 +18,7 @@ metadata:
 
 ## 必要前提
 
-1. **待合并分支与开发信息已确认**：已明确本次需要合并的分支名，以及对应的开发序号、Issue 编号与 PR 所在仓库名。四者任一无法确定时中断，使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测（`INPUT_MISSING`）。
+1. **待合并分支与开发信息已登记**：分支名、worktree 路径与开发序号取自 `docs/dev-docs/<开发序号>/开发上下文.md`；Issue 编号与 PR 所在仓库名取自同目录的 Issue 留档与分支名。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）；Issue 编号或仓库名无法确定时使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测。
 2. **远端仓库类型可判断**：`git remote -v` 与 `gh repo view --json isFork,parent` 能确认当前远端是主仓库还是 fork 仓库。无法判断时中断，使用 `AskUserQuestion` 向人类确认，不自行执行同步（`REPO_UNKNOWN`）。
 3. **工作区干净**：`git status` 显示无未提交改动。存在未提交改动时中断，使用 `AskUserQuestion` 向人类确认处理方式，不强行切换分支或丢弃改动（`WORKTREE_DIRTY`）。
 4. **git 与 gh 可用**：`git status` 与 `gh auth status` 均能成功执行，当前仓库存在 `main` 分支。不满足时中断并保留原始报错，提示人类配置 git / gh 后重试（`GIT_UNAVAILABLE`）。
@@ -28,7 +28,9 @@ metadata:
 - 必须：CI 全部通过才算提交完成——PR 先以草稿形式创建以触发 CI，所有 CI 检查实际通过后，才可标记为可评审并请求合并。
 - 必须：奥卡姆剃刀——只修改 CI 报错明确指出的错误，不做报错之外的任何改动、重构或「顺手改进」。
 - 必须：若修复必然改动代码的执行逻辑，改动后的行为须与 `docs/dev-docs/<开发序号>/<标题>流程图.md` 的描述一致；与流程图冲突时立即停止提交，向人类说明冲突点与原因并等待决定。
-- 必须：分支名、仓库类型、PR 的目标仓库、PR 标题与正文来源无法判断或缺失时，先用 `AskUserQuestion` 向人类确认，再继续。
+- 必须：分支名、开发序号与 worktree 路径一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行；仓库类型、PR 的目标仓库、PR 标题与正文来源无法判断或缺失时，先用 `AskUserQuestion` 向人类确认，再继续。
+- 必须：开发规范（`docs/开发规范/`）只读。
+- 禁止：创建 / 切换 / 重命名开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；提交流程中按登记分支执行，合并所需的 `main` 操作按第 2、3 步流程进行。
 - 禁止：CI 未全部通过时转为可评审、请求合并，或以 `--admin` 等方式强制合并。
 - 禁止：跳过、禁用、忽略 CI 检查，或虚构 CI 结果。
 - 禁止：自行解决合并冲突或改动合并策略；冲突交由人类决定。
@@ -48,12 +50,10 @@ metadata:
 
 ### 1. 明确本次需要合并的分支
 
-向人类确认：
+- 从 `docs/dev-docs/<开发序号>/开发上下文.md` 读取开发序号、分支名与 worktree 路径；登记文件缺失时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）。
+- 从同目录的 Issue 留档与分支名确定 Issue 编号与 PR 所在仓库名（用于第 5 步取 PR 标题与正文、第 6 步保存本地 PR 副本）；无法确定时使用 `AskUserQuestion` 向人类确认，禁止凭提交记录猜测。
 
-- 本次需要合并的分支名；
-- 该分支对应的开发序号、Issue 编号与 PR 所在仓库名（用于第 5 步取 PR 标题与正文、第 6 步保存本地 PR 副本）。
-
-无法确定时使用 `AskUserQuestion` 向人类询问，禁止凭提交记录猜测。四项均确认后，进入第 2 步。
+上述信息确认后，进入第 2 步。
 
 ### 2. 判断远端仓库类型，fork 时先同步上游 main
 
@@ -133,10 +133,10 @@ python evals/verify_artifacts.py docs/dev-docs/<开发序号>
 
 ```text
 pr_creator(
-  待合并分支: string,                       // 必填：本次要合入 main 的分支名，须由人类确认
-  开发序号: string,                         // 必填：docs/dev-docs/<开发序号>/ 的目录名，须由人类确认
-  Issue编号: string,                        // 必填：用于取 PR 背景，须由人类确认
-  PR仓库名: string,                         // 必填：PR 所在仓库名，用于本地副本命名，须由人类确认
+  待合并分支: string,                       // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的「分支名」
+  开发序号: string,                         // 必填：取自同一登记文件的「开发序号」
+  Issue编号: string,                        // 必填：用于取 PR 背景，取自同目录 Issue 留档
+  PR仓库名: string,                         // 必填：PR 所在仓库名，用于本地副本命名，取自同目录 Issue 留档
   远端仓库类型: "main" | "fork" | null,     // 可选：由第 2 步判断；无法判断时向人类确认
 ) -> SkillResult
 
@@ -162,7 +162,8 @@ SkillError {
 
 | 失败场景 | 判定条件 | 处理动作 |
 | --- | --- | --- |
-| 分支或仓库信息缺失 | 待合并分支名、开发序号、Issue 编号或 PR 所在仓库名任一无法确定 | 中断，不执行 git / gh 操作；使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测（`INPUT_MISSING`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的分支名、开发序号、worktree 路径不一致 | 中断，不执行 git / gh 操作；回到 `spec-manager` 补齐登记文件后再继续（`CONTEXT_MISSING`） |
+| 仓库信息缺失 | Issue 编号或 PR 所在仓库名无法从 docs 确定 | 中断；使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测（`INPUT_MISSING`） |
 | 远端仓库类型无法判断 | `git remote -v` 与 `gh repo view --json isFork,parent` 无法判定主仓库或 fork，或没有远端仓库 | 中断；使用 `AskUserQuestion` 向人类确认仓库类型后再继续，不自行执行同步（`REPO_UNKNOWN`） |
 | 工作区不干净 | `git status` 显示存在未提交改动 | 中断；使用 `AskUserQuestion` 向人类确认处理方式，禁止强行切换分支或丢弃改动（`WORKTREE_DIRTY`） |
 | git 或 gh 不可用 | `git status` 或 `gh auth status` 报错，或 `main` 分支不存在 | 中断并保留原始报错；提示人类配置 git / gh 后重试（`GIT_UNAVAILABLE`） |

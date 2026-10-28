@@ -11,6 +11,9 @@ import sys
 from pathlib import Path
 
 DEV_DOCS_REL = Path("docs") / "dev-docs"
+SPEC_DIR_REL = Path("docs") / "开发规范"
+DEV_CONTEXT_FILE = "开发上下文.md"
+MANAGER_LOCK_REL = Path(".git") / "from-issue-to-pr" / "spec-manager.lock"
 ISSUE_FILE_SUFFIX = "-issue.md"
 PR_FILE_SUFFIX = "-PR.md"
 
@@ -64,3 +67,39 @@ def dev_index_from_path(file_path: str) -> tuple[Path, str] | None:
             seq = parts[index + 2]
             return (Path(*parts[: index + 3]), seq)
     return None
+
+
+def manager_lock(project_dir: Path) -> Path:
+    """spec-manager 的执行授权标记路径（位于 .git 下，不进入版本库）。"""
+    return project_dir / MANAGER_LOCK_REL
+
+
+def manager_active(project_dir: Path) -> bool:
+    """是否存在 spec-manager 的授权标记；存在即视为管理角色正在执行。"""
+    return manager_lock(project_dir).is_file()
+
+
+def protected_write_reason(project_dir: Path, file_path: str) -> str | None:
+    """判断写入目标是否属于 spec-manager 独占范围；是则返回拦截原因。"""
+    if not file_path:
+        return None
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = project_dir / path
+    path = path.resolve()
+
+    spec_dir = (project_dir / SPEC_DIR_REL).resolve()
+    if spec_dir in path.parents or path == spec_dir:
+        return "docs/开发规范/ 下的开发规范由 spec-manager 独占写入"
+
+    located = dev_index_from_path(str(path))
+    if not located:
+        return None
+
+    index_dir, _ = located
+    if path.name == DEV_CONTEXT_FILE:
+        return "开发上下文登记文件由 spec-manager 独占写入"
+    if not index_dir.is_dir():
+        return "开发序号目录只能由 spec-manager 创建"
+    return None
+

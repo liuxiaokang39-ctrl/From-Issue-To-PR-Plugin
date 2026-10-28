@@ -22,7 +22,7 @@ metadata:
 2. **需求 Issue 留档存在**：`docs/dev-docs/<开发序号>/` 下存在 `<仓库名>-<issue编号>-issue.md` 且内容非空。不满足时中断，回到 `issue-writer` 阶段补齐。
 3. **任务清单与执行顺序存在**：`docs/dev-docs/<开发序号>/task-list/` 下存在 `执行顺序.md` 与其中引用的任务文件 `<编号>-<任务标题>.md`。不满足时中断，回到 `task-planner` 阶段补齐。
 4. **工作区代码可读**：被测目录存在且可逐文件读取。不满足时中断，向人类确认被测目录与工作区范围后再执行。
-5. **开发序号可确定**：`<开发序号>` 取自开发文档、流程图、需求 Issue 与 `task-list/` 共同所在的 `docs/dev-docs/<开发序号>/` 目录。不一致或无法确定时中断，使用 `AskUserQuestion` 向人类提问确认后再执行，不自行编号。
+5. **开发序号可确定**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值，且与开发文档、流程图、需求 Issue 与 `task-list/` 所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号。
 
 ## 执行约束
 
@@ -35,6 +35,8 @@ metadata:
 - 禁止：执行任何测试场景，或在测试流程文档中写入执行结果（本阶段只设计、只准备）。
 - 禁止：虚构测试场景或期望结果；期望结果必须可执行、可判定。
 - 禁止：开发文档、流程图或任务清单缺失时自行脑补测试目标。
+- 必须：开发规范（`docs/开发规范/`）只读；开发序号、分支名、worktree 路径与开发目录一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行。
+- 禁止：创建 / 切换 / 重命名开发分支或 worktree，禁止写入开发规范与开发上下文登记文件。
 - 只能写入：`docs/dev-docs/<开发序号>/test-process/` 下的三份测试流程文档；除这三份文档外不新增其他文件或目录，也不改动生产源码。
 
 **参考文件**：本 Skill 附带下列文件，此处仅**显式声明其存在**，不展开其正文：
@@ -139,7 +141,7 @@ python evals/verify_artifacts.py docs/dev-docs/<开发序号>
 
 ```text
 test_planner(
-  开发序号: string,            // 必填：docs/dev-docs/<开发序号>/ 的目录名，须由人类确认
+  开发序号: string,            // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的登记值
   开发文档: string,            // 必填：docs/dev-docs/<开发序号>/<标题>开发文档.md，须已定稿
   流程图: string,              // 必填：同目录 <标题>流程图.md，提供状态流转作为集成白盒设计依据
   需求Issue留档: string,       // 必填：docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md
@@ -174,7 +176,7 @@ SkillError {
 | 开发文档或流程图缺失 | `docs/dev-docs/<开发序号>/` 下不存在 `<标题>开发文档.md` 或 `<标题>流程图.md`，或内容为空 | 中断，不设计测试；回到 `dev-doc-writer` 阶段补齐（`INPUT_INVALID`） |
 | 需求 Issue 留档缺失 | `docs/dev-docs/<开发序号>/` 下不存在 `<仓库名>-<issue编号>-issue.md`，或内容为空 | 中断；回到 `issue-writer` 阶段补齐（`INPUT_INVALID`） |
 | 任务清单或执行顺序缺失 | `task-list/` 下不存在 `执行顺序.md` 或其引用的任务文件 | 中断；回到 `task-planner` 阶段补齐（`INPUT_INVALID`） |
-| 开发序号无法确定 | 无法从文档所在目录确定 `<开发序号>`，或文档、需求、`task-list/` 的序号不一致 | 中断；使用 `AskUserQuestion` 向人类询问确认后再执行（`PARAM_UNKNOWN`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的开发序号与文档、需求、`task-list/` 不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
 | 存在无法覆盖的代码 | 单元 / 集成白盒场景无法追溯到某个文件或函数 | 中断该部分定稿；标注原因并用 `AskUserQuestion` 交人类确认，未确认前不得声明覆盖完成（`COVERAGE_GAP`） |
 | 真实部署黑盒未经人类审核 | 人类尚未对场景列表、执行步骤、期望结果与外部资源给出审核结论 | 中断；测试文档不得定稿，用 `AskUserQuestion` 取得审核结论后再继续（`NOT_REVIEWED`） |
 | 资源不可用或安装失败 | 资源无法获取、安装、启动或连通，或安装命令非零退出 | 中断该项；保留原始报错，说明影响范围并用 `AskUserQuestion` 询问人类是否使用替代品，不得自行替换（`RESOURCE_UNAVAILABLE`） |
