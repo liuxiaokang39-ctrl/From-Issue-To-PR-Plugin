@@ -17,8 +17,10 @@ my-plugin/
 ├── .app.json                # [可选] 应用连接器配置
 ├── agents/                  # [可选] 插件级 Agent 配置
 ├── commands/                # [可选] 用户显式触发的命令
-├── hooks.json               # [可选] 生命周期钩子配置
-├── scripts/                 # [可选] 辅助脚本
+├── hooks/                   # [可选] 生命周期钩子
+│   ├── hooks.json           # 钩子事件与脚本映射
+│   └── *.py                 # 钩子脚本与公共库
+├── scripts/                 # [可选] 插件级辅助脚本（非钩子）
 └── assets/                  # [可选] 静态资源（图标、模板等）
 ```
 
@@ -30,20 +32,23 @@ my-plugin/
 | `.app.json` | 可选 | 需要应用连接器时在此声明 |
 | `agents/` | 可选 | 插件级 Agent，供宿主支持内置 Agent 时加载 |
 | `commands/` | 可选 | 用户显式触发的命令，每个命令一个 Markdown 文件 |
-| `hooks.json` | 可选 | 生命周期钩子配置，位于插件根目录 |
-| `scripts/` | 可选 | 插件级辅助脚本，例如 `hooks.json` 指向的钩子脚本 |
+| `hooks/` | 可选 | 生命周期钩子目录，聚合 `hooks.json` 与钩子脚本 |
+| `hooks/hooks.json` | 可选 | 生命周期钩子配置，声明事件与脚本映射 |
+| `hooks/*.py` | 可选 | 钩子入口脚本与公共库，与 `hooks.json` 同目录 |
+| `scripts/` | 可选 | 插件级辅助脚本，例如 Codex 安装脚本；不存放钩子脚本 |
 | `assets/` | 可选 | 插件级静态资源，例如图标与通用模板 |
 
 关键约束：
 
 - `plugin.json` 是唯一必需项，其余目录按实际需要创建；不需要的目录不要建空目录占位。
-- `hooks.json` 位于插件根目录，不放进 `hooks/` 子目录；钩子脚本本身归入 `scripts/`。
+- 生命周期钩子统一放进 `hooks/`：`hooks.json` 与钩子脚本同级存放，不再把 `hooks.json` 放到插件根目录，也不再单独建 `hooks/scripts/`。
+- 与钩子无关的插件级辅助脚本放在根级 `scripts/`，不要放进 `hooks/`。
 - Skill 自身的 `references/`、`scripts/`、`assets/`、`evals/` 留在该 Skill 目录内，不提升到插件根目录。
 - `docs/`、`README.md`、`LICENSE` 属于仓库文档与许可证，不是插件运行时组件，按仓库惯例放在根目录。
 
 ## 本项目目录架构
 
-本项目是 Codex 插件 `from-issue-to-pr`。实际使用的插件级组成部分为 `.codex-plugin/`、`skills/`、`agents/`、`commands/`、`hooks.json`、`scripts/`；未使用 `.mcp.json`、`.app.json` 与根级 `assets/`（静态资源按 Skill 就近存放）。
+本项目是 Codex 插件 `from-issue-to-pr`。实际使用的插件级组成部分为 `.codex-plugin/`、`skills/`、`agents/`、`commands/`、`hooks/`、`scripts/`；未使用 `.mcp.json`、`.app.json` 与根级 `assets/`（静态资源按 Skill 就近存放）。
 
 ```
 From-Issue-To-PR-Skill/
@@ -52,14 +57,15 @@ From-Issue-To-PR-Skill/
 ├── .agents/
 │   └── plugins/
 │       └── marketplace.json          # 本仓库的市场登记，供分发与发现（非插件运行时组件）
-├── hooks.json                        # 生命周期事件与脚本映射（插件根目录）
-├── scripts/                          # 插件级辅助脚本：钩子脚本、公共库与安装脚本
+├── hooks/                            # 生命周期钩子目录
+│   ├── hooks.json                    # 生命周期事件与脚本映射
 │   ├── _hooklib.py                   # 钩子公共工具库
 │   ├── session_start.py              # SessionStart：注入阶段上下文与已有开发序号
 │   ├── pre_tool_use.py               # PreToolUse：拦截高危 git/gh 命令
 │   ├── post_tool_use.py              # PostToolUse：写入产物后触发对应 evals 校验
-│   ├── stop_check.py                 # Stop：收尾检查最近开发序号目录产物齐全
-│   └── install_codex.py              # 安装脚本：commands/ → ~/.codex/prompts，agents/*.toml 并注册 config.toml
+│   └── stop_check.py                 # Stop：收尾检查最近开发序号目录产物齐全
+├── scripts/
+│   └── install_codex.py              # Codex 安装脚本：commands/ → ~/.codex/prompts，agents/*.toml 并注册 config.toml
 ├── agents/
 │   ├── workflow-orchestrator.md      # 插件级 Agent（Markdown 角色定义），按 8 阶段顺序调度并处理门禁与失败回流
 │   └── workflow-orchestrator.toml    # 同一 Agent 的 Codex TOML 角色配置，供安装脚本复制到 Codex agents 目录
@@ -134,8 +140,8 @@ From-Issue-To-PR-Skill/
 | 目录 / 文件 | 职责 | 变动时机 |
 | --- | --- | --- |
 | `.codex-plugin/` | 插件清单，声明 Skill、命令、Agent、Hooks 的加载入口 | 新增插件级能力或调整入口时 |
-| `hooks.json` | 生命周期事件与 `scripts/` 下钩子脚本的映射 | 新增或调整 Hook 事件时 |
-| `scripts/` | 插件级辅助脚本：钩子入口、公共库与 Codex 安装脚本，不放业务逻辑 | 新增插件级脚本时 |
+| `hooks/` | 生命周期钩子目录：`hooks.json` 声明事件映射，同目录脚本存放钩子入口与公共库，不放业务逻辑 | 新增或调整 Hook 事件、钩子脚本时 |
+| `scripts/` | 插件级辅助脚本，存放与钩子无关的脚本（如 Codex 安装脚本），不承载业务逻辑 | 新增插件级辅助脚本时 |
 | `agents/` | 编排层，负责任务顺序、门禁与回流，不承载具体阶段规则 | 阶段顺序或门禁变化时 |
 | `commands/` | 用户的阶段入口，正文只声明调用哪个 Skill，不重复 Skill 内规则 | 新增阶段或调整命令参数时 |
 | `skills/` | 8 个阶段 Skill 的实际实现，每个目录内部按 skill目录架构规范组织 | 阶段职责变化时 |
@@ -147,8 +153,8 @@ From-Issue-To-PR-Skill/
 
 - 使用者项目的产物一律落在其 `docs/dev-docs/<开发序号>/` 或 `docs/data-struct-and-interface/` 下，不写入本仓库。
 - 本仓库 `docs/` 只维护插件自身的规范、架构与安装说明；开发规范统一放在 `docs/开发规范/` 下。
-- `scripts/__pycache__/` 为 Python 运行缓存，不属于源码，已由 `.gitignore` 的 `__pycache__/`、`*.pyc` 规则排除。
+- `hooks/__pycache__/`、`scripts/__pycache__/` 为 Python 运行缓存，不属于源码，已由 `.gitignore` 的 `__pycache__/`、`*.pyc` 规则排除。
 - 新增 Skill 时在 `skills/` 下建同名目录并至少包含 `SKILL.md`；是否补 `references/`、`assets/`、`scripts/`、`evals/` 由该阶段是否需要决定。
 - 新增命令时在 `commands/` 下建 Markdown 文件，frontmatter 写 `description` 与 `argument-hint`，正文只声明调用哪个 Skill。
-- 新增 Hook 时在根目录 `hooks.json` 增加事件映射，脚本放入 `scripts/` 并复用 `_hooklib.py`；不得再建 `hooks/` 子目录。
+- 新增 Hook 时在 `hooks/hooks.json` 增加事件映射，脚本直接放入 `hooks/` 并复用 `_hooklib.py`；不要把 `hooks.json` 放到插件根目录，也不要另建 `hooks/scripts/`。
 - 新增插件级 Agent 时同时提供 Markdown 角色定义与 Codex 用的 TOML 配置，由 `scripts/install_codex.py` 复制并注册到 `config.toml`。

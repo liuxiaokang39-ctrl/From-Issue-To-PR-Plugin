@@ -7,14 +7,14 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 | 依赖 | 用途 | 必需性 |
 | --- | --- | --- |
 | 支持插件的 Codex CLI（`codex plugin` 可用） | 安装与加载插件 | 必需 |
-| Python 3.9+ | 运行 `scripts/` 下的 Hook 脚本与各 Skill 的 `evals/` 脚本 | 必需 |
+| Python 3.9+ | 运行 `hooks/` 下的 Hook 脚本与各 Skill 的 `evals/` 脚本 | 必需 |
 | git | 分支、提交与 PR 流程 | 必需 |
 | GitHub CLI（`gh`），已执行 `gh auth login` | 创建 Issue 与 PR | `issue-writer`、`pr-creator` 阶段必需 |
 | Rust 工具链（`rust-script`） | 生成 rustdoc JSON 与 AST 事实 | 仅 `project-doc-sync` 阶段必需 |
 
 本项目不使用数据库；需要连通的只有 GitHub（通过 `gh` 访问）。
 
-根目录的 `hooks.json` 默认以 `python` 调用脚本。若系统只有 `python3`，安装前需把该文件中的命令改为 `python3`。
+`hooks/hooks.json` 默认以 `python` 调用脚本。若系统只有 `python3`，安装前需把该文件中的命令改为 `python3`。
 
 ## 安装
 
