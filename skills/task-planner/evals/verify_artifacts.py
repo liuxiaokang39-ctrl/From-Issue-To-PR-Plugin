@@ -14,7 +14,9 @@
 2. 任务文件名为 `<编号>-<任务标题>.md`；
 3. 每个任务文件最开头是合法 JSON 头：`编号` 为非空字符串且与文件名前缀一致，
    `依赖` 为字符串数组（无依赖填 `[]`），依赖指向存在的任务，且无自依赖与循环依赖；
-4. `执行顺序.md` 存在，覆盖全部任务，且顺序满足依赖的先后关系。
+4. `执行顺序.md` 存在，覆盖全部任务，且顺序满足依赖的先后关系；
+5. 每个任务文件的 `工作区` 按「名称（读写 / 只读）——目录」填写，名称与类型
+   均来自同目录 `开发上下文.md` 的工作区表格。
 
 退出码：全部通过为 0；有缺失或不符合约定为 1；参数错误为 2。
 """
@@ -33,6 +35,44 @@ _JSON_FENCE_RE = re.compile(
     re.DOTALL | re.IGNORECASE,
 )
 _ORDER_LINE_RE = re.compile(r"^\s*\d+\.\s+(\S+)")
+_WORKSPACE_LINE_RE = re.compile(
+    r"^\s*[-*]\s*工作区\s*[:：]\s*([^\s（(]+)\s*[（(]\s*(读写|只读)\s*[）)]",
+    re.MULTILINE,
+)
+_WORKSPACE_TYPES = ("只读", "读写")
+
+
+def _workspace_registry(path: Path) -> dict[str, str]:
+    """读取开发上下文登记文件的工作区表格，返回 {名称: 类型}。"""
+    try:
+        text = path.read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return {}
+    registry: dict[str, str] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) != 3:
+            continue
+        name, kind, directory = cells
+        if kind in _WORKSPACE_TYPES and name and not name.startswith("<"):
+            registry[name] = kind
+    return registry
+
+
+def _validate_workspace(text: str, registry: dict[str, str]) -> list[str]:
+    """校验任务文件的「工作区」是否引用登记表中的名称与类型。"""
+    match = _WORKSPACE_LINE_RE.search(text)
+    if not match:
+        return ["「工作区」字段缺失，或未按「名称（读写 / 只读）——目录」格式填写"]
+    name, kind = match.group(1), match.group(2)
+    if name not in registry:
+        return [f"「工作区」引用了未登记的名称：{name}"]
+    if registry[name] != kind:
+        return [f"「工作区」类型（{kind}）与登记类型（{registry[name]}）不一致"]
+    return []
 
 
 def _parse_header(text: str) -> tuple[dict[str, Any] | None, str | None]:
@@ -63,7 +103,9 @@ def _validate_filename(name: str) -> list[str]:
     return problems
 
 
-def _validate_task(path: Path) -> tuple[str | None, list[str], list[str]]:
+def _validate_task(
+    path: Path, registry: dict[str, str]
+) -> tuple[str | None, list[str], list[str]]:
     """返回 (编号, 依赖列表, 问题列表)。"""
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -76,7 +118,7 @@ def _validate_task(path: Path) -> tuple[str | None, list[str], list[str]]:
     if error:
         return None, [], [error]
 
-    problems: list[str] = []
+    problems: list[str] = _validate_workspace(text, registry)
     raw_number = metadata.get("编号")
     number: str | None = None
     if not isinstance(raw_number, str) or not raw_number.strip():
@@ -192,6 +234,17 @@ def main(argv: list[str]) -> int:
         return 1
     print(f"  ✓ 任务目录：{task_dir}")
 
+    registry_path = root / "开发上下文.md"
+    registry = _workspace_registry(registry_path)
+    if not registry_path.is_file():
+        print(f"  ✗ 缺少开发上下文登记文件：{registry_path}")
+        failures += 1
+    elif not registry:
+        print("  ✗ 开发上下文登记文件缺少工作区表格")
+        failures += 1
+    else:
+        print(f"  ✓ 开发上下文登记文件：{len(registry)} 个工作区")
+
     task_files = sorted(
         path
         for path in task_dir.iterdir()
@@ -204,7 +257,7 @@ def main(argv: list[str]) -> int:
     deps_map: dict[str, list[str]] = {}
     for path in task_files:
         problems = _validate_filename(path.name)
-        number, deps, header_problems = _validate_task(path)
+        number, deps, header_problems = _validate_task(path, registry)
         problems.extend(header_problems)
 
         if problems:
@@ -213,7 +266,7 @@ def main(argv: list[str]) -> int:
                 print(f"      - {problem}")
             failures += 1
         else:
-            print(f"  ✓ 任务文件 {path.name}：JSON 头合法")
+            print(f"  ✓ 任务文件 {path.name}：JSON 头与工作区引用合法")
             if number is not None:
                 deps_map[number] = deps
 

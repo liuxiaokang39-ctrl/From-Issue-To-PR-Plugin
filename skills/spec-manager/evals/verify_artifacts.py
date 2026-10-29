@@ -16,7 +16,8 @@
 - 开发信息分配模式下额外校验：
   - docs/dev-docs/<开发序号>/ 及其下的 task-list/、test-process/、
     task-report/、test-report/ 四个子目录；
-  - docs/dev-docs/<开发序号>/开发上下文.md，四项登记值齐全且非占位。
+  - docs/dev-docs/<开发序号>/开发上下文.md，登记值（开发序号、分支名、
+    worktree 路径）齐全且非占位，工作区表格（名称 / 类型 / 目录）至少一条「读写」。
 
 worktree 与分支不由本脚本校验，由 Agent 依据 `git worktree list` 与 `git branch` 复核。
 
@@ -37,8 +38,9 @@ _MIGRATION_DIR = Path("docs") / "开发规范" / "迁移信息"
 _DEV_DOCS_DIR = Path("docs") / "dev-docs"
 _CONTEXT_FILE = "开发上下文.md"
 _SKELETON_DIRS = ("task-list", "test-process", "task-report", "test-report")
-_CONTEXT_FIELDS = ("开发序号", "分支名", "worktree 路径", "开发目录")
-_CONTEXT_RE = re.compile(r"^\s*[-*]\s*(开发序号|分支名|worktree 路径|开发目录)\s*[:：]\s*(.+?)\s*$")
+_CONTEXT_FIELDS = ("开发序号", "分支名", "worktree 路径")
+_CONTEXT_RE = re.compile(r"^\s*[-*]\s*(开发序号|分支名|worktree 路径)\s*[:：]\s*(.+?)\s*$")
+_WORKSPACE_TYPES = ("只读", "读写")
 
 
 def _is_non_empty(path: Path) -> bool:
@@ -59,6 +61,30 @@ def _context_values(path: Path) -> dict[str, str]:
         if match:
             values[match.group(1)] = match.group(2).strip()
     return values
+
+
+def _workspace_rows(path: Path) -> list[tuple[str, str, str]]:
+    """读取登记文件中的工作区表格，返回 [(名称, 类型, 目录)]。"""
+    try:
+        text = path.read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return []
+    rows: list[tuple[str, str, str]] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) != 3:
+            continue
+        name, kind, directory = cells
+        if kind in _WORKSPACE_TYPES:
+            rows.append((name, kind, directory))
+    return rows
+
+
+def _is_placeholder(value: str) -> bool:
+    return not value or value.startswith("<")
 
 
 def main(argv: list[str]) -> int:
@@ -120,11 +146,26 @@ def main(argv: list[str]) -> int:
             else:
                 for field in _CONTEXT_FIELDS:
                     value = values.get(field, "")
-                    if not value or value.startswith("<"):
+                    if _is_placeholder(value):
                         print(f"  ✗ 登记文件缺少有效值：{field}")
                         failures += 1
                     else:
                         print(f"  ✓ 登记值：{field} = {value}")
+
+                rows = _workspace_rows(context_path)
+                if not rows:
+                    print("  ✗ 登记文件缺少工作区表格（名称 / 类型 / 目录）")
+                    failures += 1
+                else:
+                    for name, kind, directory in rows:
+                        if _is_placeholder(name) or _is_placeholder(directory):
+                            print(f"  ✗ 工作区条目缺少有效值：{name or '（空名称）'}")
+                            failures += 1
+                        else:
+                            print(f"  ✓ 工作区：{name}（{kind}）→ {directory}")
+                    if not any(kind == "读写" for _, kind, _ in rows):
+                        print("  ✗ 工作区表格中没有「读写」工作区")
+                        failures += 1
 
     print()
     if failures:
