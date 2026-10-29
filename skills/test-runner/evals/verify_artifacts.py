@@ -9,8 +9,8 @@
 
 开发序号目录即 docs/dev-docs/<开发序号>。约定产物为：
 
-- 通过报告：`test-report/测试报告.md`；
-- 失败报告：`test-report/failure-report/<序号>-测试未通过报告.md`。
+- 通过报告：`test-report/test-report.md`；
+- 失败报告：`test-report/failure-report/<seq>-test-failure-report.md`。
 
 至少须存在其一，且内容非空；存在失败报告时，文件名须符合约定。
 
@@ -23,8 +23,8 @@ import re
 import sys
 from pathlib import Path
 
-_PASS_REPORT = "测试报告.md"
-_FAIL_REPORT_RE = re.compile(r"^\d+-测试未通过报告\.md$")
+_PASS_REPORT = "test-report.md"
+_FAIL_REPORT_RE = re.compile(r"^\d+-test-failure-report\.md$")
 
 
 def _is_non_empty(path: Path) -> bool:
@@ -64,7 +64,7 @@ def main(argv: list[str]) -> int:
     valid_fail = 0
     for path in fail_reports:
         if not _FAIL_REPORT_RE.match(path.name):
-            print(f"  ✗ 失败报告命名不符合 `<序号>-测试未通过报告.md`：{path}")
+            print(f"  ✗ 失败报告命名不符合 `<seq>-test-failure-report.md`：{path}")
             failures += 1
         elif not _is_non_empty(path):
             print(f"  ✗ 失败报告内容为空：{path}")
@@ -74,7 +74,7 @@ def main(argv: list[str]) -> int:
             valid_fail += 1
 
     if not pass_report_ok and valid_fail == 0:
-        print(f"  ✗ 缺少测试报告：{report_dir / _PASS_REPORT} 或 {fail_dir}/<序号>-测试未通过报告.md")
+        print(f"  ✗ 缺少测试报告：{report_dir / _PASS_REPORT} 或 {fail_dir}/<seq>-test-failure-report.md")
         failures += 1
 
     print()

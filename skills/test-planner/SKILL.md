@@ -1,6 +1,6 @@
 ---
 name: test-planner
-description: 测试流程编写与资源准备：依据开发文档、需求与真实实现设计单元白盒、集成白盒、真实部署黑盒测试，覆盖工作区全部代码并对公有接口做黑盒验证，产出三份测试流程文档并准备执行所需资源，不执行测试。当用户要求编写测试流程、测试计划或测试方案，设计单元白盒 / 集成白盒 / 真实部署黑盒测试，准备测试资源，或提到「测试流程」「测试计划」「测试方案」「白盒测试设计」「黑盒测试设计」「测试资源准备」等说法时使用；典型输入为 docs/dev-docs/<开发序号>/ 下的开发文档、流程图、需求 Issue 与 task-list/。
+description: 测试流程编写与资源准备：依据开发文档、需求与真实实现设计单元白盒、集成白盒、真实部署黑盒测试，覆盖工作区全部代码并对公有接口做黑盒验证，产出三份测试流程文档并准备执行所需资源，不执行测试。当用户要求编写测试流程、测试计划或测试方案，设计单元白盒 / 集成白盒 / 真实部署黑盒测试，准备测试资源，或提到「测试流程」「测试计划」「测试方案」「白盒测试设计」「黑盒测试设计」「测试资源准备」等说法时使用；典型输入为 docs/dev-docs/<开发序号>/ 下的 `<title>-dev-doc.md`、`<title>-flowchart.md`、需求 Issue 与 task-list/。
 compatibility: python3.12+
 metadata:
   author: XK_XK
@@ -18,11 +18,11 @@ metadata:
 
 ## 必要前提
 
-1. **开发文档与流程图存在**：`docs/dev-docs/<开发序号>/` 下存在 `<标题>开发文档.md` 与同目录的 `<标题>流程图.md`，且内容非空。不满足时中断，回到 `dev-doc-writer` 阶段补齐，不自行脑补测试目标。
+1. **开发文档与流程图存在**：`docs/dev-docs/<开发序号>/` 下存在 `<title>-dev-doc.md` 与同目录的 `<title>-flowchart.md`，且内容非空。不满足时中断，回到 `dev-doc-writer` 阶段补齐，不自行脑补测试目标。
 2. **需求 Issue 留档存在**：`docs/dev-docs/<开发序号>/` 下存在 `<仓库名>-<issue编号>-issue.md` 且内容非空。不满足时中断，回到 `issue-writer` 阶段补齐。
-3. **任务清单与执行顺序存在**：`docs/dev-docs/<开发序号>/task-list/` 下存在 `执行顺序.md` 与其中引用的任务文件 `<编号>-<任务标题>.md`。不满足时中断，回到 `task-planner` 阶段补齐。
+3. **任务清单与执行顺序存在**：`docs/dev-docs/<开发序号>/task-list/` 下存在 `execution-order.md` 与其中引用的任务文件 `<seq>-<task-title>.md`。不满足时中断，回到 `task-planner` 阶段补齐。
 4. **工作区代码可读**：登记文件中的工作区目录存在且可逐文件读取（只读与读写工作区均可读取）。不满足时中断，向人类确认被测工作区范围后再执行。
-5. **开发序号可确定**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值，且与开发文档、流程图、需求 Issue 与 `task-list/` 所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号。
+5. **开发序号可确定**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/dev-context.md` 的登记值，且与开发文档、流程图、需求 Issue 与 `task-list/` 所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号。
 6. **当前分支为登记分支**：执行前用 `git branch --show-current` 检查当前分支是否为登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
 
 ## 执行约束
@@ -36,8 +36,8 @@ metadata:
 - 禁止：执行任何测试场景，或在测试流程文档中写入执行结果（本阶段只设计、只准备）。
 - 禁止：虚构测试场景或期望结果；期望结果必须可执行、可判定。
 - 禁止：开发文档、流程图或任务清单缺失时自行脑补测试目标。
-- 必须：开发规范（`docs/开发规范/`）只读；开发序号、分支名、worktree 路径与工作区一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行。
-- 禁止：创建 / 重命名 / 删除开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
+- 必须：开发规范（`docs/dev-standards/`）只读；开发序号、分支名、项目根目录与工作区一律取自 `docs/dev-docs/<开发序号>/dev-context.md`，只按登记值执行，执行前在项目根目录内按登记分支名自检并切换。
+- 禁止：创建 / 重命名 / 删除开发分支，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
 - 必须：凡需要向人类提问或确认的环节（真实部署黑盒测试场景、替代资源、覆盖例外等），一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；人类可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
 - 只能写入：`docs/dev-docs/<开发序号>/test-process/` 下的三份测试流程文档；除这三份文档外不新增其他文件或目录，也不改动生产源码。
 
@@ -54,7 +54,7 @@ metadata:
 
 读取以下内容，确定本次对应的开发文档序号：
 
-- 开发文档：`docs/dev-docs/<开发序号>/` 下的 `<标题>开发文档.md`、同目录流程图、`task-list/` 下的任务文件与 `task-list/执行顺序.md`；
+- 开发文档：`docs/dev-docs/<开发序号>/` 下的 `<title>-dev-doc.md`、同目录 `<title>-flowchart.md`、`task-list/` 下的任务文件与 `task-list/execution-order.md`；
 - 需求：`docs/dev-docs/<开发序号>/` 下的 `<仓库名>-<issue编号>-issue.md`；
 - 任务报告：`docs/dev-docs/<开发序号>/task-report/`（若存在）；
 - 工作区代码：逐文件读取被测目录的真实实现。
@@ -86,7 +86,7 @@ metadata:
 ### 5. 生成测试流程文档
 
 - 目录：`docs/dev-docs/<开发序号>/test-process/`；
-- 文件固定为三份：`1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`；
+- 文件固定为三份：`1-unit-whitebox-test-process.md`、`2-integration-whitebox-test-process.md`、`3-real-deployment-blackbox-test-process.md`；
 - 每份文档统一按六节组织：1. 测试目标、2. 验收标准、3. 工作区范围、4. 测试步骤与期望结果、5. 测试所需外部资源（如果有）、6. 注意事项（如果有）；
 - 在「工作区范围」列出被测文件 / 函数与覆盖它们的场景编号，形成覆盖清单。
 
@@ -121,7 +121,7 @@ metadata:
 
 交付前逐项检查以下内容：
 
-- `docs/dev-docs/<开发序号>/test-process/` 下同时存在 `1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`，命名一致且内容非空；
+- `docs/dev-docs/<开发序号>/test-process/` 下同时存在 `1-unit-whitebox-test-process.md`、`2-integration-whitebox-test-process.md`、`3-real-deployment-blackbox-test-process.md`，命名一致且内容非空；
 - 每份文档均按六节组织且无空节，含「工作区范围」覆盖清单，清单中的场景编号与正文场景一一对应；
 - 覆盖清单能追溯到工作区的每个文件与函数，未覆盖项已标注原因并经人类确认；
 - 真实部署黑盒文档记录的人类审核结论与人类确认一致；
@@ -144,11 +144,11 @@ python evals/verify_artifacts.py docs/dev-docs/<开发序号>
 
 ```text
 test_planner(
-  开发序号: string,            // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的登记值
-  开发文档: string,            // 必填：docs/dev-docs/<开发序号>/<标题>开发文档.md，须已定稿
-  流程图: string,              // 必填：同目录 <标题>流程图.md，提供状态流转作为集成白盒设计依据
+  开发序号: string,            // 必填：取自 docs/dev-docs/<开发序号>/dev-context.md 的登记值
+  开发文档: string,            // 必填：docs/dev-docs/<开发序号>/<title>-dev-doc.md，须已定稿
+  流程图: string,              // 必填：同目录 <title>-flowchart.md，提供状态流转作为集成白盒设计依据
   需求Issue留档: string,       // 必填：docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md
-  任务清单: string,            // 必填：docs/dev-docs/<开发序号>/task-list/执行顺序.md 及其引用的任务文件
+  任务清单: string,            // 必填：docs/dev-docs/<开发序号>/task-list/execution-order.md 及其引用的任务文件
   任务报告: string | null,     // 可选：docs/dev-docs/<开发序号>/task-report/；缺省视为无任务报告
   人类补充场景: string[] | null, // 可选：真实部署黑盒人类审核时补充的场景；缺省按 AI 设计稿执行审核
 ) -> SkillResult
@@ -168,18 +168,18 @@ SkillError {
 
 输出产物均位于 `docs/dev-docs/<开发序号>/test-process/`：
 
-1. `1-单元白盒测试流程.md`：单元白盒与公有接口单元层黑盒场景；
-2. `2-集成白盒测试流程.md`：集成白盒与公有接口集成层黑盒场景；
-3. `3-真实部署黑盒测试流程.md`：真实部署形态的端到端黑盒场景，须经人类审核。
+1. `1-unit-whitebox-test-process.md`：单元白盒与公有接口单元层黑盒场景；
+2. `2-integration-whitebox-test-process.md`：集成白盒与公有接口集成层黑盒场景；
+3. `3-real-deployment-blackbox-test-process.md`：真实部署形态的端到端黑盒场景，须经人类审核。
 
 ## 失败处理
 
 | 失败场景 | 判定条件 | 处理动作 |
 | --- | --- | --- |
-| 开发文档或流程图缺失 | `docs/dev-docs/<开发序号>/` 下不存在 `<标题>开发文档.md` 或 `<标题>流程图.md`，或内容为空 | 中断，不设计测试；回到 `dev-doc-writer` 阶段补齐（`INPUT_INVALID`） |
+| 开发文档或流程图缺失 | `docs/dev-docs/<开发序号>/` 下不存在 `<title>-dev-doc.md` 或 `<title>-flowchart.md`，或内容为空 | 中断，不设计测试；回到 `dev-doc-writer` 阶段补齐（`INPUT_INVALID`） |
 | 需求 Issue 留档缺失 | `docs/dev-docs/<开发序号>/` 下不存在 `<仓库名>-<issue编号>-issue.md`，或内容为空 | 中断；回到 `issue-writer` 阶段补齐（`INPUT_INVALID`） |
-| 任务清单或执行顺序缺失 | `task-list/` 下不存在 `执行顺序.md` 或其引用的任务文件 | 中断；回到 `task-planner` 阶段补齐（`INPUT_INVALID`） |
-| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的开发序号与文档、需求、`task-list/` 不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
+| 任务清单或执行顺序缺失 | `task-list/` 下不存在 `execution-order.md` 或其引用的任务文件 | 中断；回到 `task-planner` 阶段补齐（`INPUT_INVALID`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/dev-context.md` 不存在，或登记的开发序号与文档、需求、`task-list/` 不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
 | 当前分支不是登记分支 | `git branch --show-current` 与登记「分支名」不一致，且切换失败 | 中断并保留原始报错；提示人类检查分支状态后重试，禁止自行创建分支（`BRANCH_MISMATCH`） |
 | 存在无法覆盖的代码 | 单元 / 集成白盒场景无法追溯到某个文件或函数 | 中断该部分定稿；标注原因并用 `AskUserQuestion` 交人类确认，未确认前不得声明覆盖完成（`COVERAGE_GAP`） |
 | 真实部署黑盒未经人类审核 | 人类尚未对场景列表、执行步骤、期望结果与外部资源给出审核结论 | 中断；测试文档不得定稿，用 `AskUserQuestion` 取得审核结论后再继续（`NOT_REVIEWED`） |
@@ -197,10 +197,10 @@ SkillError {
 
 ```text
 开发序号：001
-开发文档：docs/dev-docs/001/订单系统开发文档.md
-流程图：docs/dev-docs/001/订单系统流程图.md
+开发文档：docs/dev-docs/001/order-system-dev-doc.md
+流程图：docs/dev-docs/001/order-system-flowchart.md
 需求Issue留档：docs/dev-docs/001/From-Issue-To-PR-Skill-12-issue.md
-任务清单：docs/dev-docs/001/task-list/执行顺序.md
+任务清单：docs/dev-docs/001/task-list/execution-order.md
 任务报告：docs/dev-docs/001/task-report/
 人类补充场景：null
 ```
@@ -212,9 +212,9 @@ SkillError {
 ```text
 status: success
 artifacts: [
-  "docs/dev-docs/001/test-process/1-单元白盒测试流程.md",
-  "docs/dev-docs/001/test-process/2-集成白盒测试流程.md",
-  "docs/dev-docs/001/test-process/3-真实部署黑盒测试流程.md"
+  "docs/dev-docs/001/test-process/1-unit-whitebox-test-process.md",
+  "docs/dev-docs/001/test-process/2-integration-whitebox-test-process.md",
+  "docs/dev-docs/001/test-process/3-real-deployment-blackbox-test-process.md"
 ]
 errors: []
 ```
@@ -225,10 +225,10 @@ errors: []
 
 ```text
 开发序号：002
-开发文档：docs/dev-docs/002/退款审批开发文档.md
-流程图：docs/dev-docs/002/退款审批流程图.md
+开发文档：docs/dev-docs/002/refund-approval-dev-doc.md
+流程图：docs/dev-docs/002/refund-approval-flowchart.md
 需求Issue留档：docs/dev-docs/002/From-Issue-To-PR-Skill-13-issue.md
-任务清单：docs/dev-docs/002/task-list/执行顺序.md
+任务清单：docs/dev-docs/002/task-list/execution-order.md
 任务报告：null
 人类补充场景：null
 ```

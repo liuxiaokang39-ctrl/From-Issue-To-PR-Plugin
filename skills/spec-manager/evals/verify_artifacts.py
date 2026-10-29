@@ -10,16 +10,17 @@
     python evals/verify_artifacts.py . 4
 
 约定产物：
-- docs/开发规范/Rust编码规范.md（存在且内容非空）；
-- docs/开发规范/项目目录架构规范.md（存在且内容非空）；
-- docs/开发规范/迁移信息/（目录存在）；
+- docs/dev-standards/rust-coding-standards.md（存在且内容非空）；
+- docs/dev-standards/project-architecture-standards.md（存在且内容非空）；
+- docs/dev-standards/migration-info/（目录存在）；
 - 开发信息分配模式下额外校验：
   - docs/dev-docs/<开发序号>/ 及其下的 task-list/、test-process/、
     task-report/、test-report/ 四个子目录；
-  - docs/dev-docs/<开发序号>/开发上下文.md，登记值（开发序号、分支名、
-    worktree 路径）齐全且非占位，工作区表格（名称 / 类型 / 目录）至少一条「读写」。
+  - docs/dev-docs/<开发序号>/dev-context.md，登记值（开发序号、分支名、
+    项目根目录）齐全且非占位，工作区表格（名称 / 类型 / 目录）至少一条「读写」，
+    且目录为项目根相对路径并存在于项目根下。
 
-worktree 与分支不由本脚本校验，由 Agent 依据 `git worktree list` 与 `git branch` 复核。
+开发分支不由本脚本校验，由 Agent 依据 `git branch` 复核。
 
 退出码：全部通过为 0；有缺失或内容为空为 1；参数错误为 2。
 """
@@ -31,15 +32,15 @@ import sys
 from pathlib import Path
 
 _SPEC_DOCS = (
-    Path("docs") / "开发规范" / "Rust编码规范.md",
-    Path("docs") / "开发规范" / "项目目录架构规范.md",
+    Path("docs") / "dev-standards" / "rust-coding-standards.md",
+    Path("docs") / "dev-standards" / "project-architecture-standards.md",
 )
-_MIGRATION_DIR = Path("docs") / "开发规范" / "迁移信息"
+_MIGRATION_DIR = Path("docs") / "dev-standards" / "migration-info"
 _DEV_DOCS_DIR = Path("docs") / "dev-docs"
-_CONTEXT_FILE = "开发上下文.md"
+_CONTEXT_FILE = "dev-context.md"
 _SKELETON_DIRS = ("task-list", "test-process", "task-report", "test-report")
-_CONTEXT_FIELDS = ("开发序号", "分支名", "worktree 路径")
-_CONTEXT_RE = re.compile(r"^\s*[-*]\s*(开发序号|分支名|worktree 路径)\s*[:：]\s*(.+?)\s*$")
+_CONTEXT_FIELDS = ("开发序号", "分支名", "项目根目录")
+_CONTEXT_RE = re.compile(r"^\s*[-*]\s*(开发序号|分支名|项目根目录)\s*[:：]\s*(.+?)\s*$")
 _WORKSPACE_TYPES = ("只读", "读写")
 
 
@@ -160,6 +161,11 @@ def main(argv: list[str]) -> int:
                     for name, kind, directory in rows:
                         if _is_placeholder(name) or _is_placeholder(directory):
                             print(f"  ✗ 工作区条目缺少有效值：{name or '（空名称）'}")
+                            failures += 1
+                            continue
+                        target = project_root / directory
+                        if Path(directory).is_absolute() or not target.is_dir():
+                            print(f"  ✗ 工作区目录不存在于项目根下：{name} → {directory}")
                             failures += 1
                         else:
                             print(f"  ✓ 工作区：{name}（{kind}）→ {directory}")

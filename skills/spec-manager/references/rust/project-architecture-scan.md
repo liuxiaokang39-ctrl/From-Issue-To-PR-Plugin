@@ -1,6 +1,6 @@
 # 项目目录架构扫描与描述口径
 
-本文件供 `spec-manager` 在第 3 步扫描并描述项目目录架构、写入 `docs/开发规范/项目目录架构规范.md` 时使用。
+本文件供 `spec-manager` 在第 3 步扫描并描述项目目录架构、写入 `docs/dev-standards/project-architecture-standards.md` 时使用。
 
 ## 一、扫描范围
 

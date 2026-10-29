@@ -1,6 +1,6 @@
 ---
 name: issue-writer
-description: 需求确认阶段（阶段 A）：通过对话把模糊需求收敛为一份可评审的 Issue（范围边界、背景与目标、需求列表、每项需求的期望行为与期望结果），先确认「做什么 / 不做什么」再确认具体需求，在远端仓库创建 Issue 后调用 spec-manager 一次性分配开发序号、分支、worktree 与开发工作区，并按返回的开发序号本地留档。
+description: 需求确认阶段（阶段 A）：通过对话把模糊需求收敛为一份可评审的 Issue（范围边界、背景与目标、需求列表、每项需求的期望行为与期望结果），先确认「做什么 / 不做什么」再确认具体需求，在远端仓库创建 Issue 后调用 spec-manager 一次性分配开发序号、分支、项目根目录与开发工作区，并按返回的开发序号本地留档。
 compatibility: python3.12+；依赖 git 与 gh CLI（GitHub CLI），执行时需要 git 与 gh 可用并已登录认证。
 metadata:
   author: XK_XK
@@ -28,8 +28,8 @@ metadata:
 - 必须：只保留用户确认过的需求，不添加未经确认的需求、字段或章节（奥卡姆剃刀）。
 - 必须：先确认「本期做什么、不做什么」，再确认具体需求；顺序不得颠倒。
 - 必须：凡「是否需要该需求」「需求本身」「期望行为」「期望结果」存在不明确处，一律向用户提问并由用户决定；禁止自行脑补、假设或替用户拍板。
-- 必须：开发序号、分支名、worktree 路径与工作区一律取自 `spec-manager` 一次调用的返回值，本地留档只使用返回的开发序号；禁止自行确认序号、自建分支或 worktree。
-- 必须：开发规范（`docs/开发规范/`）与开发上下文登记文件（`docs/dev-docs/<开发序号>/开发上下文.md`）只读，禁止写入或改写。
+- 必须：开发序号、分支名、项目根目录与工作区一律取自 `spec-manager` 一次调用的返回值，本地留档只使用返回的开发序号；禁止自行确认序号或自建分支。
+- 必须：开发规范（`docs/dev-standards/`）与开发上下文登记文件（`docs/dev-docs/<开发序号>/dev-context.md`）只读，禁止写入或改写。
 - 必须：凡需要向用户提问或确认的环节（背景与范围、需求与验收标准、远端仓库类型、Issue 正文确认、失败处理去向），一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；用户可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
 - 禁止：把已被推翻、已过时的旧需求迁移进 Issue——报告只包含最新需求。
 - 禁止：除「远端 Issue 与本地留档文件」外，新增其他文件或目录；禁止创建 `docs/dev-docs/<开发序号>/` 目录骨架（由 `spec-manager` 创建）。
@@ -80,7 +80,7 @@ metadata:
 
 用 `gh issue create` 创建 Issue，取得 Issue 链接与 Issue 编号。创建成功后：
 
-- 用 Issue 链接调用一次 `spec-manager`（模式为「开发信息分配」），取得开发序号、分支名（`feat/<Issue编号>-<简述>`）、worktree 路径、工作区清单四项返回值；`spec-manager` 负责创建目录骨架、开发上下文登记文件、worktree 与分支，本 Skill 只接收返回值，不重复确认或改写；
+- 用 Issue 链接调用一次 `spec-manager`（模式为「开发信息分配」），取得开发序号、分支名（`feat/<Issue编号>-<简述>`）、项目根目录、工作区清单四项返回值；`spec-manager` 负责创建目录骨架、开发上下文登记文件与分支，本 Skill 只接收返回值，不重复确认或改写；
 - 开发信息缺失或调用失败时中断，保留已创建的 Issue 链接并报告错误；
 - 按返回的开发序号本地留档：目录为 `docs/dev-docs/<开发序号>/`（目录已由 `spec-manager` 创建），文件名为 `<仓库名>-<issue编号>-issue.md`（仓库名取实际创建 Issue 的仓库名，如 `From-Issue-To-PR-Skill-12-issue.md`），内容只包含用户确认过的最新需求；
 - 回传 Issue 链接与本地留档路径。
@@ -119,7 +119,7 @@ SkillResult {
   开发信息: {                 // 来自 spec-manager 的一次调用返回值
     开发序号: number,
     分支名: string,
-    worktree路径: string,
+    项目根目录: string,
     工作区: Workspace[]
   } | null,
   errors: SkillError[]
@@ -158,7 +158,7 @@ SkillError {
 远端仓库类型：main
 ```
 
-关键步骤：确认需求 → 创建远端 Issue #12 → 调用 `spec-manager`（开发信息分配）→ 返回开发序号 12、分支 `feat/12-order-cancel`、worktree 路径与工作区清单 → 按返回序号写 `docs/dev-docs/12/From-Issue-To-PR-Skill-12-issue.md` → 校验通过。
+关键步骤：确认需求 → 创建远端 Issue #12 → 调用 `spec-manager`（开发信息分配）→ 返回开发序号 12、分支 `feat/12-order-cancel`、项目根目录与工作区清单 → 按返回序号写 `docs/dev-docs/12/From-Issue-To-PR-Skill-12-issue.md` → 校验通过。
 
 输出：
 
@@ -171,7 +171,7 @@ artifacts: [
 开发信息: {
   开发序号: 12,
   分支名: "feat/12-order-cancel",
-  worktree路径: "E:/From-Issue-To-PR-Skill-dev-12",
+  项目根目录: "E:/From-Issue-To-PR-Skill",
   工作区: [
     { 名称: "ordering", 类型: "读写", 目录: "src/ordering/" },
     { 名称: "docs", 类型: "只读", 目录: "docs/" }
@@ -215,7 +215,7 @@ errors: [
 ```text
 status: failed
 errors: [
-  { code: "SPEC_MANAGER_FAILED", message: "spec-manager 未返回开发信息（开发序号 / 分支名 / worktree 路径 / 工作区），已暂停", recoverable: true }
+  { code: "SPEC_MANAGER_FAILED", message: "spec-manager 未返回开发信息（开发序号 / 分支名 / 项目根目录 / 工作区），已暂停", recoverable: true }
 ]
 处理动作：中断并保留 Issue 链接；向用户报告缺失项，待 spec-manager 补齐后再留档
 ```

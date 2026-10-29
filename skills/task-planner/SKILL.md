@@ -1,6 +1,6 @@
 ---
 name: task-planner
-description: 任务拆分阶段：把已定稿的开发文档拆成原子任务文件（含工作区、验收标准、从开发文档摘录的函数 / 结构体 / 数据库表，以及依据开发文档功能与同目录状态流转流程图设计的函数内部流程图）与执行顺序文件，依赖关系经拓扑排序生成执行顺序。当用户要求把开发文档拆成任务、生成任务清单或 task-list、规划任务执行顺序，或提到「任务拆分」「拆任务」「验收标准」「依赖」「拓扑排序」「执行顺序」等关键词时使用；典型输入为 docs/dev-docs/<开发序号>/ 下的开发文档与同目录流程图。
+description: 任务拆分阶段：把已定稿的开发文档拆成原子任务文件（含工作区、验收标准、从开发文档摘录的函数 / 结构体 / 数据库表，以及依据开发文档功能与同目录状态流转流程图设计的函数内部流程图）与执行顺序文件，依赖关系经拓扑排序生成执行顺序。当用户要求把开发文档拆成任务、生成任务清单或 task-list、规划任务执行顺序，或提到「任务拆分」「拆任务」「验收标准」「依赖」「拓扑排序」「执行顺序」等关键词时使用；典型输入为 docs/dev-docs/<开发序号>/ 下的 `<title>-dev-doc.md` 与同目录 `<title>-flowchart.md`。
 compatibility: python3.12+
 metadata:
   author: XK_XK
@@ -13,29 +13,29 @@ metadata:
 
 ## 适用场景
 
-- 适用：已有定稿的开发文档与流程图，需要拆出原子任务、编写任务文件（工作区、验收标准、实现内容、函数内部流程图），并产出 `执行顺序.md`；用户提到「任务拆分」「拆任务」「任务清单」「task-list」「执行顺序」「依赖排序」「拓扑排序」等说法。
+- 适用：已有定稿的开发文档与流程图，需要拆出原子任务、编写任务文件（工作区、验收标准、实现内容、函数内部流程图），并产出 `execution-order.md`；用户提到「任务拆分」「拆任务」「任务清单」「task-list」「执行顺序」「依赖排序」「拓扑排序」等说法。
 - 不适用：开发文档尚未定稿或缺少流程图（回到 `dev-doc-writer` 补齐）；需求收敛与 Issue 制作（由 `issue-writer` 处理）；按任务文件执行编码（由 `implementer` 处理）。
 
 ## 必要前提
 
-1. **开发文档已定稿**：`docs/dev-docs/<开发序号>/` 下存在 `<标题>开发文档.md`，且已定稿。不满足时回到 `dev-doc-writer` 阶段，不自行脑补设计。
-2. **同目录流程图存在**：`docs/dev-docs/<开发序号>/` 下存在与开发文档同名的 `<标题>流程图.md`。不满足时回到 `dev-doc-writer` 阶段。
-3. **开发序号已登记**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值，且与本次开发文档、流程图一致，任务目录 `docs/dev-docs/<开发序号>/task-list/` 可确定。登记文件缺失或与开发文档不一致时中断，回到 `spec-manager` 补齐，不得自行编号或向用户另行确认序号。
+1. **开发文档已定稿**：`docs/dev-docs/<开发序号>/` 下存在 `<title>-dev-doc.md`，且已定稿。不满足时回到 `dev-doc-writer` 阶段，不自行脑补设计。
+2. **同目录流程图存在**：`docs/dev-docs/<开发序号>/` 下存在与开发文档同名的 `<title>-flowchart.md`。不满足时回到 `dev-doc-writer` 阶段。
+3. **开发序号已登记**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/dev-context.md` 的登记值，且与本次开发文档、流程图一致，任务目录 `docs/dev-docs/<开发序号>/task-list/` 可确定。登记文件缺失或与开发文档不一致时中断，回到 `spec-manager` 补齐，不得自行编号或向用户另行确认序号。
 4. **脚本运行环境可用**：能执行 `python scripts/topo_sort.py`（Python 3.9+，含 `graphlib`）。不可用时提示用户安装或启用 Python 环境，不得以手工排序替代。
-5. **当前分支为登记分支**：执行前用 `git branch --show-current` 检查当前分支是否为 `docs/dev-docs/<开发序号>/开发上下文.md` 登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
+5. **当前分支为登记分支**：执行前用 `git branch --show-current` 检查当前分支是否为 `docs/dev-docs/<开发序号>/dev-context.md` 登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
 
 ## 执行约束
 
 - 必须：奥卡姆剃刀——如无必要，勿增实体；只拆出完成需求真正需要的任务，不添加需求之外的任务、字段或章节。
-- 必须：每个任务都写明它读写或只读的工作区，工作区名称必须是 `docs/dev-docs/<开发序号>/开发上下文.md` 工作区表格中登记的名称，类型以登记表为准；没有工作区的任务视为未完成。
+- 必须：每个任务都写明它读写或只读的工作区，工作区名称必须是 `docs/dev-docs/<开发序号>/dev-context.md` 工作区表格中登记的名称，类型以登记表为准；没有工作区的任务视为未完成。
 - 必须：依赖关系在本阶段显式产出，且构成 DAG，禁止循环依赖。
 - 必须：任务文件中的实现内容取自开发文档，不得自行新增设计；函数内部流程图由本 Skill 在拆分任务时依据开发文档的功能描述与同目录流程图的状态流转设计，不得编造开发文档未描述的分支、错误或调用。
 - 必须：执行顺序由脚本对「依赖」做拓扑排序生成，禁止 Agent 自行排序。
 - 禁止：缺少函数内部流程图的任务文件定稿。
 - 禁止：验收标准不可判定（如「完成开发」「功能正常」）的任务定稿。
 - 禁止：存在循环依赖时输出执行顺序。
-- 必须：开发规范（`docs/开发规范/`）只读；开发序号、分支名、worktree 路径与工作区一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行。
-- 禁止：创建 / 重命名 / 删除开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
+- 必须：开发规范（`docs/dev-standards/`）只读；开发序号、分支名、项目根目录与工作区一律取自 `docs/dev-docs/<开发序号>/dev-context.md`，只按登记值执行，执行前在项目根目录内按登记分支名自检并切换。
+- 禁止：创建 / 重命名 / 删除开发分支，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
 - 必须：凡需要向用户提问或确认的环节，一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；用户可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
 - 只能写入：`docs/dev-docs/<开发序号>/task-list/`，不新增其他文件或目录。
 
@@ -48,7 +48,7 @@ metadata:
 
 ### 1. 读取开发文档
 
-输入为已定稿的开发文档与流程图，即 `docs/dev-docs/<开发序号>/` 下的 `<标题>开发文档.md` 与其同目录的 `<标题>流程图.md`。逐节读取开发文档的「数据结构」「函数定义」与同目录流程图的状态流转，作为后续拆分、摘录与函数内部流程图设计的唯一依据。开发文档的流程图只描述整体状态流转，不包含函数内部流程图；函数内部流程图不在上游产出，由本 Skill 在拆分任务时设计。
+输入为已定稿的开发文档与流程图，即 `docs/dev-docs/<开发序号>/` 下的 `<title>-dev-doc.md` 与其同目录的 `<title>-flowchart.md`。逐节读取开发文档的「数据结构」「函数定义」与同目录流程图的状态流转，作为后续拆分、摘录与函数内部流程图设计的唯一依据。开发文档的流程图只描述整体状态流转，不包含函数内部流程图；函数内部流程图不在上游产出，由本 Skill 在拆分任务时设计。
 
 若开发文档不存在或未定稿，先回到 `dev-doc-writer` 阶段，不自行脑补设计。读取完成且开发文档与流程图均存在时，进入第 2 步。
 
@@ -87,9 +87,9 @@ metadata:
 **参考模板**：本 Skill 附带 `assets/task-template.md`（任务文件模板，含 JSON 头、实现内容、函数内部流程图与示例）。此处仅**显式声明其存在**；**仅在制作任务文件时才读取该文件内容**并据其结构撰写，其余阶段不展开其正文。
 
 - 目录：`docs/dev-docs/<开发序号>/task-list/`，开发序号与本次拆分的开发文档、流程图一致；
-- 命名：`<编号>-<任务标题>.md`；
+- 命名：`<seq>-<task-title>.md`，`<task-title>` 为任务标题的英文 kebab-case 短名（全小写、不含中文），无法确定时用 `AskUserQuestion` 给出候选短名请用户确认；
 - 每个文件最开头为 JSON 头，声明 `编号`（字符串）与 `依赖`（数组，无依赖填 `[]`）；
-- `工作区` 字段写 `docs/dev-docs/<开发序号>/开发上下文.md` 工作区表格中的名称与类型（如 `order（读写）——src/order/validation.py`）；名称不在登记表中时用 `AskUserQuestion` 请用户确认，禁止自行新增工作区名称。
+- `工作区` 字段写 `docs/dev-docs/<开发序号>/dev-context.md` 工作区表格中的名称与类型（如 `order（读写）——src/order/validation.py`）；名称不在登记表中时用 `AskUserQuestion` 请用户确认，禁止自行新增工作区名称。
 
 全部任务文件均按模板写出、且每个函数条目都附有函数内部流程图后，进入第 4 步。
 
@@ -100,12 +100,12 @@ metadata:
 **脚本**：本 Skill 附带 `scripts/topo_sort.py`。扫描任务目录、构建有向图、检测循环依赖、输出执行顺序文件：
 
 ```bash
-python scripts/topo_sort.py docs/dev-docs/<开发序号>/task-list -o docs/dev-docs/<开发序号>/task-list/执行顺序.md
+python scripts/topo_sort.py docs/dev-docs/<开发序号>/task-list -o docs/dev-docs/<开发序号>/task-list/execution-order.md
 ```
 
 排序流程：提取任务节点 → 由任务文件的「依赖」声明前置关系 → 构建有向图 → 检测是否存在环 → 拓扑排序 → 对同一层级的无依赖任务，再按风险、模块、文件边界做二次排序。依赖关系必须由拆分阶段显式产出；排序脚本只负责排序，不推断依赖。
 
-若存在循环依赖，脚本报错退出，须回到第 3 步修正依赖后再运行。脚本成功输出 `执行顺序.md` 后，进入第 5 步。
+若存在循环依赖，脚本报错退出，须回到第 3 步修正依赖后再运行。脚本成功输出 `execution-order.md` 后，进入第 5 步。
 
 ### 5. 校验
 
@@ -127,9 +127,9 @@ python evals/verify_artifacts.py docs/dev-docs/<开发序号>
 
 ```text
 task_planner(
-  开发文档: string,          // 必填：docs/dev-docs/<开发序号>/<标题>开发文档.md，须已定稿
-  流程图: string,            // 必填：同目录 <标题>流程图.md，提供状态流转作为函数内部流程图的设计依据
-  开发序号: string,          // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的登记值，与开发文档、流程图一致
+  开发文档: string,          // 必填：docs/dev-docs/<开发序号>/<title>-dev-doc.md，须已定稿
+  流程图: string,            // 必填：同目录 <title>-flowchart.md，提供状态流转作为函数内部流程图的设计依据
+  开发序号: string,          // 必填：取自 docs/dev-docs/<开发序号>/dev-context.md 的登记值，与开发文档、流程图一致
 ) -> SkillResult
 
 SkillResult {
@@ -147,17 +147,17 @@ SkillError {
 
 输出产物均位于 `docs/dev-docs/<开发序号>/task-list/`：
 
-1. **任务文件** `<编号>-<任务标题>.md`：一个任务一个文件，含编号、任务、工作区、依赖、产出、验收标准，以及从开发文档摘录的实现内容（函数、结构体、数据库表，字段以 `assets/task-template.md` 为准）；每个函数条目另附依据开发文档与同目录流程图设计的函数内部流程图。
-2. **执行顺序文件** `执行顺序.md`：由脚本拓扑排序生成的线性任务序列，供 Agent 按序执行。
+1. **任务文件** `<seq>-<task-title>.md`：一个任务一个文件，含编号、任务、工作区、依赖、产出、验收标准，以及从开发文档摘录的实现内容（函数、结构体、数据库表，字段以 `assets/task-template.md` 为准）；每个函数条目另附依据开发文档与同目录流程图设计的函数内部流程图。
+2. **执行顺序文件** `execution-order.md`：由脚本拓扑排序生成的线性任务序列，供 Agent 按序执行。
 
 ## 失败处理
 
 | 失败场景          | 判定条件                                             | 处理动作                                                             |
 | ------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| 开发文档缺失或未定稿    | `docs/dev-docs/<开发序号>/<标题>开发文档.md` 不存在，或内容未定稿    | 中断，不产出任务文件；回到 `dev-doc-writer` 阶段补齐（`DEV_DOC_MISSING`）           |
-| 流程图缺失         | `<标题>流程图.md` 不存在                                 | 中断；回到 `dev-doc-writer` 阶段补齐后再执行（`FLOWCHART_MISSING`）             |
+| 开发文档缺失或未定稿    | `docs/dev-docs/<开发序号>/<title>-dev-doc.md` 不存在，或内容未定稿    | 中断，不产出任务文件；回到 `dev-doc-writer` 阶段补齐（`DEV_DOC_MISSING`）           |
+| 流程图缺失         | `<title>-flowchart.md` 不存在                                 | 中断；回到 `dev-doc-writer` 阶段补齐后再执行（`FLOWCHART_MISSING`）             |
 | 函数内部流程图缺失     | 任务文件中存在函数条目，却没有对应由本 Skill 设计的函数内部流程图             | 中断；回到第 3 步补设计后重新校验（`FUNCTION_FLOWCHART_MISSING`）                 |
-| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的开发序号与开发文档、流程图不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/dev-context.md` 不存在，或登记的开发序号与开发文档、流程图不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
 | 当前分支不是登记分支 | `git branch --show-current` 与登记「分支名」不一致，且切换失败 | 中断并保留原始报错；提示用户检查分支状态后重试，禁止自行创建分支（`BRANCH_MISMATCH`） |
 | 任务文件 JSON 头非法 | 脚本报 `JSON 头解析失败`、`「编号」必须是字符串`、`「依赖」必须是数组` 等      | 中断；按脚本报错修正对应任务文件的 JSON 头后重跑（`TASK_HEADER_INVALID`）               |
 | 任务编号重复或依赖不存在  | 脚本输出 `任务编号重复：` 或 `依赖了不存在的任务：`                    | 中断；修正编号或依赖关系后重跑（`DEPENDENCY_INVALID`）                            |
@@ -172,21 +172,21 @@ SkillError {
 输入：
 
 ```text
-开发文档：docs/dev-docs/001/订单系统开发文档.md
-流程图：docs/dev-docs/001/订单系统流程图.md
+开发文档：docs/dev-docs/001/order-system-dev-doc.md
+流程图：docs/dev-docs/001/order-system-flowchart.md
 开发序号：001
 ```
 
-关键步骤：读取开发文档与流程图 → 拆出「001 创建订单表及索引」「002 实现订单创建校验」（002 依赖 001）→ 按 `assets/task-template.md` 写出两个任务文件并附函数内部流程图 → 运行 `topo_sort.py` 生成执行顺序 → 运行 `verify_artifacts.py` 校验通过。
+关键步骤：读取开发文档与流程图 → 拆出「001 create-orders-table」「002 create-order-validation」（002 依赖 001）→ 按 `assets/task-template.md` 写出两个任务文件并附函数内部流程图 → 运行 `topo_sort.py` 生成执行顺序 → 运行 `verify_artifacts.py` 校验通过。
 
 输出：
 
 ```text
 status: success
 artifacts: [
-  "docs/dev-docs/001/task-list/001-创建订单表及索引.md",
-  "docs/dev-docs/001/task-list/002-实现订单创建校验.md",
-  "docs/dev-docs/001/task-list/执行顺序.md"
+  "docs/dev-docs/001/task-list/001-create-orders-table.md",
+  "docs/dev-docs/001/task-list/002-create-order-validation.md",
+  "docs/dev-docs/001/task-list/execution-order.md"
 ]
 errors: []
 ```
@@ -196,8 +196,8 @@ errors: []
 输入：
 
 ```text
-开发文档：docs/dev-docs/001/订单系统开发文档.md
-流程图：docs/dev-docs/001/订单系统流程图.md
+开发文档：docs/dev-docs/001/order-system-dev-doc.md
+流程图：docs/dev-docs/001/order-system-flowchart.md
 开发序号：001
 任务依赖：002 依赖 003，003 依赖 002
 ```
@@ -209,6 +209,6 @@ status: failed
 errors: [
   { code: "CYCLE_DEPENDENCY", message: "检测到循环依赖：002 → 003 → 002", recoverable: true }
 ]
-处理动作：中断，不生成 执行顺序.md；回到第 3 步修正依赖关系后重新运行 topo_sort.py
+处理动作：中断，不生成 execution-order.md；回到第 3 步修正依赖关系后重新运行 topo_sort.py
 ```
 

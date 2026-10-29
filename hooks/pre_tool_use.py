@@ -2,10 +2,10 @@
 """PreToolUse hook：拦截不可逆的 git / gh 命令，以及非 spec-manager 对管理产物的越权操作。
 
 越权范围：
-- 写入 `docs/开发规范/` 下的开发规范；
-- 写入 `docs/dev-docs/<序号>/开发上下文.md`；
+- 写入 `docs/dev-standards/` 下的开发规范；
+- 写入 `docs/dev-docs/<序号>/dev-context.md`；
 - 新建 `docs/dev-docs/<序号>/` 序号目录（目录尚不存在时）；
-- 创建 / 重命名 / 删除分支或创建 / 移动 / 删除 worktree。
+- 创建 / 重命名 / 删除分支。
 
 spec-manager 执行期间会在 `.git/from-issue-to-pr/spec-manager.lock` 写入授权标记，
 存在该标记时上述管理操作放行；其他来源一律阻断。
@@ -40,8 +40,6 @@ _WORKSPACE_RULES: tuple[tuple[str, str], ...] = (
      "创建分支只能由 spec-manager 执行"),
     (r"git\s+switch\s+(?:-c|-C)\b",
      "创建分支只能由 spec-manager 执行"),
-    (r"git\s+worktree\s+(?:add|remove|move|prune|lock|unlock)\b",
-     "创建 / 调整 worktree 只能由 spec-manager 执行"),
 )
 
 _CREATE_DIR_RE = re.compile(r"mkdir|new-item|md\s|robocopy|xcopy", re.IGNORECASE)
@@ -92,7 +90,7 @@ def _bash_reason(command: str, project_dir: Path) -> str | None:
             return reason
 
     if _SHELL_WRITE_RE.search(command) and (
-        re.search(r"docs[\\/]+开发规范", command) or "开发上下文.md" in command
+        re.search(r"docs[\\/]+dev-standards", command) or "dev-context.md" in command
     ):
         return "开发规范与开发上下文登记文件由 spec-manager 独占写入"
 

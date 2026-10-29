@@ -29,8 +29,8 @@ def main() -> int:
     lines = [
         "【from-issue-to-pr 插件】业务链路含 8 个阶段 Skill：",
         _STAGES,
-        "spec-manager 是管理角色、不占阶段序号：流程启动时调用一次检查并维护开发规范；issue-writer 创建 Issue 后调用一次，一次性分配开发序号、分支、worktree 与开发目录。",
-        "开发规范与 docs/dev-docs/<开发序号>/开发上下文.md 只由 spec-manager 写入；其他 Skill 只读规范、只按登记值执行，禁止自行分配序号或创建分支 / worktree。",
+        "spec-manager 是管理角色、不占阶段序号：流程启动时调用一次检查并维护开发规范；issue-writer 创建 Issue 后调用一次，一次性分配开发序号、分支与开发项目目录工作区。",
+        "开发规范与 docs/dev-docs/<开发序号>/dev-context.md 只由 spec-manager 写入；其他 Skill 只读规范、只按登记值执行，禁止自行分配序号或创建分支。",
         "产物统一落在 docs/dev-docs/<开发序号>/，项目文档按既有位置就地更新。",
         "固定入口命令共 2 条：/prompts:fitp-workflow（全流程 / 阶段续跑）与 /prompts:fitp-issueWriter（仅需求确认并创建 Issue）。",
         "无参数启动：先做启动检查，再输出「请描述本次开发计划的需求」，随后进入 A 阶段；携带 Issue 链接启动：跳过需求询问，直接复用该 Issue。",

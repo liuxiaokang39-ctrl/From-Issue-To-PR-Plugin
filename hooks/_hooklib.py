@@ -11,11 +11,11 @@ import sys
 from pathlib import Path
 
 DEV_DOCS_REL = Path("docs") / "dev-docs"
-SPEC_DIR_REL = Path("docs") / "开发规范"
-DEV_CONTEXT_FILE = "开发上下文.md"
+SPEC_DIR_REL = Path("docs") / "dev-standards"
+DEV_CONTEXT_FILE = "dev-context.md"
 MANAGER_LOCK_REL = Path(".git") / "from-issue-to-pr" / "spec-manager.lock"
 ISSUE_FILE_SUFFIX = "-issue.md"
-PR_FILE_SUFFIX = "-PR.md"
+PR_FILE_SUFFIX = "-pr.md"
 
 
 def read_event() -> dict:
@@ -90,7 +90,7 @@ def protected_write_reason(project_dir: Path, file_path: str) -> str | None:
 
     spec_dir = (project_dir / SPEC_DIR_REL).resolve()
     if spec_dir in path.parents or path == spec_dir:
-        return "docs/开发规范/ 下的开发规范由 spec-manager 独占写入"
+        return "docs/dev-standards/ 下的开发规范由 spec-manager 独占写入"
 
     located = dev_index_from_path(str(path))
     if not located:

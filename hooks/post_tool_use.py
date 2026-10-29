@@ -39,7 +39,7 @@ def _skill_for(relative: Path) -> str | None:
         return "test-runner"
     if "migration-info" in parts:
         return "dev-doc-writer"
-    if name.endswith(("开发文档.md", "流程图.md", "公有接口契约.md")):
+    if name.endswith(("-dev-doc.md", "-flowchart.md", "-interface-contract.md")):
         return "dev-doc-writer"
     return None
 

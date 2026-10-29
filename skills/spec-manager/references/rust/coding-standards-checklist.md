@@ -1,6 +1,6 @@
 # Rust 编码规范检查项与来源标注口径
 
-本文件供 `spec-manager` 在第 2 步生成或更新 `docs/开发规范/Rust编码规范.md` 时使用。规范的每条约束必须标注来源，二选一：
+本文件供 `spec-manager` 在第 2 步生成或更新 `docs/dev-standards/rust-coding-standards.md` 时使用。规范的每条约束必须标注来源，二选一：
 
 | 来源标注 | 判定条件 |
 | --- | --- |

@@ -8,18 +8,20 @@
     python evals/verify_artifacts.py docs/dev-docs/001
 
 开发序号目录即 docs/dev-docs/<开发序号>。约定产物为同目录下的
-`<标题>流程图.md`、`<标题>公有接口契约.md`、`<标题>开发文档.md`，
-须同时存在、内容非空，且三者的 `<标题>` 保持一致。
+`<title>-flowchart.md`、`<title>-interface-contract.md`、`<title>-dev-doc.md`，
+须同时存在、内容非空，三者的 `<title>` 保持一致且为英文 kebab-case（全小写、不含中文）。
 
 退出码：全部通过为 0；有缺失或不符合约定为 1；参数错误为 2。
 """
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
-_SUFFIXES = ("流程图.md", "公有接口契约.md", "开发文档.md")
+_SUFFIXES = ("-flowchart.md", "-interface-contract.md", "-dev-doc.md")
+_TITLE_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def _is_non_empty(path: Path) -> bool:
@@ -48,19 +50,19 @@ def main(argv: list[str]) -> int:
             path for path in root.iterdir() if path.is_file() and path.name.endswith(suffix)
         )
         if not matches:
-            print(f"  ✗ 缺少产物：<标题>{suffix}")
+            print(f"  ✗ 缺少产物：<title>{suffix}")
             failures += 1
             continue
         if len(matches) > 1:
             names = "、".join(path.name for path in matches)
-            print(f"  ✗ <标题>{suffix} 存在多份：{names}")
+            print(f"  ✗ <title>{suffix} 存在多份：{names}")
             failures += 1
             continue
 
         path = matches[0]
         title = path.name[: -len(suffix)]
-        if not title:
-            print(f"  ✗ 产物缺少标题：{path.name}")
+        if not title or not _TITLE_RE.match(title):
+            print(f"  ✗ 产物标题须为英文 kebab-case：{path.name}")
             failures += 1
             continue
         if not _is_non_empty(path):
@@ -72,7 +74,7 @@ def main(argv: list[str]) -> int:
         print(f"  ✓ 产物：{path}")
 
     if len(set(titles.values())) > 1:
-        detail = "、".join(f"{suffix[:-3]}={title}" for suffix, title in titles.items())
+        detail = "、".join(f"{suffix}={title}" for suffix, title in titles.items())
         print(f"  ✗ 三份产物的标题不一致：{detail}")
         failures += 1
 

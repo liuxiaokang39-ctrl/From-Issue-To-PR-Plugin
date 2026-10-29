@@ -175,7 +175,7 @@ Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.w
 | 事件 | Codex 工具名 | 行为 | 是否阻断 |
 | --- | --- | --- | --- |
 | `SessionStart` | — | 注入 8 阶段工作流、`spec-manager` 管理角色、两条固定入口命令与阶段续跑规则，并列出已有开发序号 | 否 |
-| `PreToolUse` | `Bash`、`apply_patch` | 拦截强制推送、`reset --hard`、`clean -f`、强删分支、`gh pr merge --admin` 等不可逆命令；非 `spec-manager` 写入开发规范、新建序号目录、操作分支或 worktree 时拒绝 | 是（deny） |
+| `PreToolUse` | `Bash`、`apply_patch` | 拦截强制推送、`reset --hard`、`clean -f`、强删分支、`gh pr merge --admin` 等不可逆命令；非 `spec-manager` 写入开发规范、新建序号目录或操作分支时拒绝 | 是（deny） |
 | `PostToolUse` | `apply_patch` | 解析补丁中的 `*** Add File:` / `*** Update File:` / `*** Delete File:` 路径，对 `docs/dev-docs/<序号>/` 产物运行对应 Skill 的 `evals/` 校验 | 否（回传校验结果） |
 | `Stop` | — | 最近一个开发序号目录缺产物时返回一次继续执行，让模型补齐或向用户说明 | 一次继续 |
 

@@ -19,9 +19,9 @@ metadata:
 ## 必要前提
 
 1. **输入必须是已确认的 Issue**：`docs/dev-docs/<开发序号>/` 下存在本次开发的 Issue 本地留档（`<仓库名>-<issue编号>-issue.md`）且已经人类确认。不存在或未确认时，回到 `issue-writer` 阶段，不自行脑补需求。
-2. **开发序号与标题可确定**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值；`<标题>` 取 Issue 标题。登记文件缺失时中断并回到 `spec-manager` 补齐；标题无法确定时用 `AskUserQuestion` 向人类提问。
+2. **开发序号与标题可确定**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/dev-context.md` 的登记值；`<title>` 取 Issue 标题的英文 kebab-case 短名（由中文标题意译、全小写、不含中文），三份产物共用同一短名。登记文件缺失时中断并回到 `spec-manager` 补齐；短名无法确定时用 `AskUserQuestion` 向人类提问。
 3. **工作区可检查**：登记文件中的工作区目录可读取（只读与读写工作区均可读取，可为空目录）。不满足时中断，使用 `AskUserQuestion` 向人类确认工作区范围后再执行（`INPUT_INVALID`）。
-4. **当前分支为登记分支**：执行前用 `git branch --show-current` 检查当前分支是否为 `docs/dev-docs/<开发序号>/开发上下文.md` 登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
+4. **当前分支为登记分支**：执行前用 `git branch --show-current` 检查当前分支是否为 `docs/dev-docs/<开发序号>/dev-context.md` 登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
 
 ## 执行约束
 
@@ -33,10 +33,10 @@ metadata:
 - 必须：开发文档中的状态枚举、实体、接口、错误码与流程图、公有接口契约保持一致；发现不一致时回到对应上游环节修订，不在下游补丁式兜底。
 - 禁止：新增公有接口契约之外的公有接口。
 - 禁止：出现未决项；未决项必须询问人类并确定为已决项。
-- 必须：开发规范（`docs/开发规范/`）只读；开发序号、分支名、worktree 路径与工作区一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行。
-- 禁止：创建 / 重命名 / 删除开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
+- 必须：开发规范（`docs/dev-standards/`）只读；开发序号、分支名、项目根目录与工作区一律取自 `docs/dev-docs/<开发序号>/dev-context.md`，只按登记值执行，执行前在项目根目录内按登记分支名自检并切换。
+- 禁止：创建 / 重命名 / 删除开发分支，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
 - 必须：凡需要人类确认或选择的环节（标题、流程图、公有接口契约、开发文档定稿、失败处理去向），一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；人类可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
-- 禁止：在同一份文件中并存原设计与修改后设计，设计文档只记录最新设计；迁移记录只记录新设计与原设计的不同（而非原设计全部内容），放置于 `docs/dev-docs/<开发序号>/migration-info/` 下，命名为 `<序号>-<迁移内容概况>.md`（`<序号>` 为该开发序号下迁移记录的递增序号）。
+- 禁止：在同一份文件中并存原设计与修改后设计，设计文档只记录最新设计；迁移记录只记录新设计与原设计的不同（而非原设计全部内容），放置于 `docs/dev-docs/<开发序号>/migration-info/` 下，命名为 `<序号>-<slug>.md`（`<序号>` 为该开发序号下迁移记录的递增序号，`<slug>` 为迁移内容概况的英文 kebab-case 短名，不含中文）。
 - 只能修改：`docs/dev-docs/<开发序号>/` 目录；除流程图、公有接口契约、开发文档与设计迁移记录外，不新增其他文件或目录。
 
 **参考文件**：本 Skill 附带以下参考材料，此处仅**显式声明其存在**，不展开其正文：
@@ -54,15 +54,15 @@ metadata:
 
 读取 `docs/dev-docs/<开发序号>/` 下的 Issue 本地留档（`<仓库名>-<issue编号>-issue.md`），确认本次开发要完成的需求、期望行为与期望结果。
 
-- `<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值；登记文件缺失时中断并回到 `spec-manager` 补齐。
-- `<标题>` 取 Issue 标题；标题不明确时用 `AskUserQuestion` 向人类提问。
-- 后续三份产物共用同一 `<开发序号>` 与 `<标题>`。
+- `<开发序号>` 取自 `docs/dev-docs/<开发序号>/dev-context.md` 的登记值；登记文件缺失时中断并回到 `spec-manager` 补齐。
+- `<title>` 取 Issue 标题意译出的英文 kebab-case 短名（全小写、不含中文），用 `AskUserQuestion` 给出候选短名请人类确认；短名不明确时用 `AskUserQuestion` 向人类提问。
+- 后续三份产物共用同一 `<开发序号>` 与 `<title>`。
 
 ### 2. 检查现有代码实现，确认设计起点
 
 在设计流程图与公有接口契约前，先检查工作区是否已有相关实现：
 
-- 以 `docs/dev-docs/<开发序号>/开发上下文.md` 登记的工作区为范围（读写工作区为重点，只读工作区仅用于理解现有实现），搜索本次需求相关的类型、函数、接口与调用点；
+- 以 `docs/dev-docs/<开发序号>/dev-context.md` 登记的工作区为范围（读写工作区为重点，只读工作区仅用于理解现有实现），搜索本次需求相关的类型、函数、接口与调用点；
 - 工作区为空或无相关实现 → 直接进入第 3 步；
 - 存在相关实现 → 使用 `AskUserQuestion` 询问人类选择「基于现有代码继续设计」或「不考虑现有代码重新设计」，用户可通过「Other」补充说明；
 - 选择「基于现有代码继续设计」→ 以现有代码的实体、状态与接口为设计起点，并在开发文档中写明复用范围；
@@ -82,7 +82,7 @@ metadata:
 流程图须覆盖 Issue 中的全部期望行为与期望结果，不得遗漏异常分支。
 
 - 目录：`docs/dev-docs/<开发序号>/`；
-- 命名：`<标题>流程图.md`。
+- 命名：`<title>-flowchart.md`。
 
 保存草稿后，明确告知人类草稿路径并请其查看，然后**使用 `AskUserQuestion` 逐项确认并给出可选方案**（确认类问题选项为「确认定稿」「需要修改」「需要重新设计」），至少确认：
 
@@ -113,7 +113,7 @@ metadata:
 - 查询类接口默认幂等；写类接口必须显式声明幂等规则，不得留空。
 
 - 目录：`docs/dev-docs/<开发序号>/`；
-- 命名：`<标题>公有接口契约.md`。
+- 命名：`<title>-interface-contract.md`。
 
 保存草稿后，明确告知人类草稿路径并请其查看，然后使用 `AskUserQuestion` 逐项确认并给出可选方案（确认类问题选项为「确认定稿」「需要修改」「需要重新设计」），至少覆盖：URL 与方法、入参 / 出参字段与类型、错误码、状态枚举、幂等规则。人类提出修改意见时，直接修改并再次确认，直至人类明确认可；认可后的内容即最终稿。
 
@@ -139,7 +139,7 @@ metadata:
 #### 5.3 制作开发文档
 
 - 目录：`docs/dev-docs/<开发序号>/`；
-- 命名：`<标题>开发文档.md`。
+- 命名：`<title>-dev-doc.md`。
 
 开发文档须与流程图、公有接口契约保持一致：状态枚举、实体、接口、错误码不得出现上游未定义的内容；发现不一致时回到对应上游环节修订，不在下游补丁式兜底。
 
@@ -156,7 +156,7 @@ metadata:
 
 在 5.4 一致性校验通过且人类确认定稿后，交付前逐项检查以下内容：
 
-- `docs/dev-docs/<开发序号>/` 下同时存在 `<标题>流程图.md`、`<标题>公有接口契约.md`、`<标题>开发文档.md`，三者 `<标题>` 一致且内容非空；
+- `docs/dev-docs/<开发序号>/` 下同时存在 `<title>-flowchart.md`、`<title>-interface-contract.md`、`<title>-dev-doc.md`，三者 `<title>` 一致且内容非空；
 - 5.4 的四项一致性检查均通过，无遗留未确认项。
 
 **校验脚本**：本 Skill 附带 `evals/verify_artifacts.py`（校验三份产物的位置、命名、标题一致性与内容非空）。此处仅**显式声明其存在**；**仅在本步骤**调用该脚本：
@@ -172,8 +172,8 @@ python evals/verify_artifacts.py docs/dev-docs/<开发序号>
 ```text
 dev_doc_writer(
   已确认Issue留档: string,           // 必填：docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md，须已经人类确认
-  开发序号: number,                   // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的登记值
-  标题: string,                       // 必填：Issue 标题
+  开发序号: number,                   // 必填：取自 docs/dev-docs/<开发序号>/dev-context.md 的登记值
+  标题: string,                       // 必填：Issue 标题意译出的英文 kebab-case 短名（全小写、不含中文）
   现有代码处理方式: "基于现有代码" | "忽略现有代码" | null, // 可选：工作区存在相关实现时必须先用 AskUserQuestion 确认
   人类设计: HumanDesign | null,      // 可选：人类已给出的流程图 / 接口契约 / 开发文档设计；缺省由 AI 依据需求自行设计
 ) -> SkillResult
@@ -196,9 +196,9 @@ SkillError {
 | 失败场景 | 判定条件 | 处理动作 |
 | --- | --- | --- |
 | Issue 留档缺失或未确认 | `docs/dev-docs/<开发序号>/` 下不存在本次开发的 Issue 文件，或该 Issue 未经人类确认 | 中断；回到 `issue-writer` 阶段，不自行脑补需求（`INPUT_INVALID`） |
-| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在或缺开发序号 | 中断；回到 `spec-manager` 补齐登记文件后再继续（`CONTEXT_MISSING`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/dev-context.md` 不存在或缺开发序号 | 中断；回到 `spec-manager` 补齐登记文件后再继续（`CONTEXT_MISSING`） |
 | 当前分支不是登记分支 | `git branch --show-current` 与登记「分支名」不一致，且切换失败 | 中断并保留原始报错；提示人类检查分支状态后重试，禁止自行创建分支（`BRANCH_MISMATCH`） |
-| 标题无法确定 | 无法从 Issue 标题确定 `<标题>` | 中断；用 `AskUserQuestion` 向人类询问确认后再继续（`PARAM_UNKNOWN`） |
+| 标题无法确定 | 无法从 Issue 标题归纳出英文 kebab-case 短名 `<title>` | 中断；用 `AskUserQuestion` 向人类询问确认后再继续（`PARAM_UNKNOWN`） |
 | 现有代码处理方式未确定 | 工作区已存在相关实现，但人类尚未选择「基于现有代码继续设计」或「不考虑现有代码重新设计」 | 中断；用 `AskUserQuestion` 取得人类选择后再继续设计（`EXISTING_CODE_UNCONFIRMED`） |
 | 流程图 / 公有接口契约未经人类确认 | 人类尚未明确认可流程图或公有接口契约终稿 | 中断；用 `AskUserQuestion` 逐项提问，将未决项确定为已决项后再继续（`NOT_CONFIRMED`） |
 | 开发文档与上游不一致 | 开发文档出现流程图或公有接口契约未定义的状态、实体、接口或错误码 | 回退到对应上游环节修订，不在下游补丁式兜底（`INCONSISTENT`） |
@@ -214,7 +214,7 @@ SkillError {
 ```text
 已确认Issue留档：docs/dev-docs/12/From-Issue-To-PR-Skill-12-issue.md（已确认）
 开发序号：12
-标题：订单状态流转
+标题：order-status-transition
 人类设计：null
 ```
 
@@ -225,9 +225,9 @@ SkillError {
 ```text
 status: success
 artifacts: [
-  "docs/dev-docs/12/订单状态流转流程图.md",
-  "docs/dev-docs/12/订单状态流转公有接口契约.md",
-  "docs/dev-docs/12/订单状态流转开发文档.md"
+  "docs/dev-docs/12/order-status-transition-flowchart.md",
+  "docs/dev-docs/12/order-status-transition-interface-contract.md",
+  "docs/dev-docs/12/order-status-transition-dev-doc.md"
 ]
 errors: []
 ```
@@ -239,7 +239,7 @@ errors: []
 ```text
 已确认Issue留档：docs/dev-docs/13/From-Issue-To-PR-Skill-13-issue.md（已确认）
 开发序号：13
-标题：退款审批
+标题：refund-approval
 人类设计：人类已给出流程图与接口契约（满足需求）
 ```
 
@@ -250,9 +250,9 @@ errors: []
 ```text
 status: success
 artifacts: [
-  "docs/dev-docs/13/退款审批流程图.md",
-  "docs/dev-docs/13/退款审批公有接口契约.md",
-  "docs/dev-docs/13/退款审批开发文档.md"
+  "docs/dev-docs/13/refund-approval-flowchart.md",
+  "docs/dev-docs/13/refund-approval-interface-contract.md",
+  "docs/dev-docs/13/refund-approval-dev-doc.md"
 ]
 errors: []
 ```

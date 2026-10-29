@@ -1,6 +1,6 @@
 # From Issue To PR
 
-From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求，按 8 个固定阶段推进到可合并的 PR，解决「需求到代码之间缺少可追溯产物与统一判定标准」的问题。`spec-manager` 是不占阶段序号的管理角色，负责维护开发规范并一次性分配开发序号、分支、worktree 与开发工作区。
+From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求，按 8 个固定阶段推进到可合并的 PR，解决「需求到代码之间缺少可追溯产物与统一判定标准」的问题。`spec-manager` 是不占阶段序号的管理角色，负责维护开发规范并一次性分配开发序号、分支与开发工作区。
 
 ## 前置条件
 
@@ -53,7 +53,7 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 
 只想确认需求并创建 Issue，使用独立入口 `/prompts:fitp-issueWriter`；它不调用 `spec-manager`、不分配开发序号，也不生成本地留档。
 
-- 开发序号、分支、worktree 与开发工作区由 `spec-manager` 自动分配与登记，无需手动提供。
+- 开发序号、分支与开发工作区由 `spec-manager` 自动分配与登记，无需手动提供。
 - 阶段续跑命令可直接粘贴到新对话，从下一阶段继续，避免长链路依赖同一上下文。
 
 ## 许可证
@@ -65,7 +65,7 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 - **不替代 Codex 的权限与沙箱**：插件不改变 Codex 的沙箱与审批设置，也不替代 Codex 自身的权限确认。
 - **不自动信任 Hook**：Hook 必须由人工在 `/hooks` 中逐条审核并信任；插件升级导致 Hook 定义变化后需重新审核。
 - **命令与 Agent 不在插件内直接生效**：Codex 不加载 `commands/` 与 `agents/`，安装时需把命令文件复制到 `~/.codex/prompts/`（以 `/prompts:xxx` 调用）、把代理的 TOML 配置复制到 `~/.codex/agents/` 或项目 `.codex/agents/`（见 [docs/install/codex.md](docs/install/codex.md)）。
-- **不覆盖全部文件写入**：Hook 监听 Codex 的 `Bash` 与 `apply_patch`；通过其他工具或脚本写文件时不会触发产物校验，但非 `spec-manager` 写入开发规范、新建序号目录或创建 / 切换分支与 worktree 仍会被拦截。
-- **管理产物只由 spec-manager 写入**：开发规范、`docs/dev-docs/<开发序号>/` 骨架、`开发上下文.md`、开发分支与 worktree 具有独占写入约束，其他 Skill 只读规范、只按登记值执行。
+- **不覆盖全部文件写入**：Hook 监听 Codex 的 `Bash` 与 `apply_patch`；通过其他工具或脚本写文件时不会触发产物校验，但非 `spec-manager` 写入开发规范、新建序号目录或创建 / 切换分支仍会被拦截。
+- **管理产物只由 spec-manager 写入**：开发规范、`docs/dev-docs/<开发序号>/` 骨架、`dev-context.md` 与开发分支具有独占写入约束，其他 Skill 只读规范、只按登记值执行。
 - **不支持 Rust 以外的项目文档同步与开发规范生成**：`project-doc-sync` 与 `spec-manager` 本版本仅处理 Rust 项目，其他语言的对应能力不在范围内。
 - **不合并 PR、不绕过 CI**：`pr-creator` 只创建草稿 PR 并修复 CI 报错，CI 未全部通过时不转为可评审；插件还会拦截 `gh pr merge --admin`、强制推送、`reset --hard` 等不可逆操作。

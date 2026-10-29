@@ -8,7 +8,7 @@
     python evals/verify_artifacts.py docs/dev-docs/001
 
 开发序号目录即 docs/dev-docs/<开发序号>。约定产物为
-`task-report/<编号>-<任务标题>.md`，须与 `task-list/` 下的每个任务文件一一对应，
+`task-report/<seq>-<task-title>.md`，须与 `task-list/` 下的每个任务文件一一对应，
 且内容非空。
 
 退出码：全部通过为 0；有缺失或内容为空为 1；参数错误为 2。
@@ -19,7 +19,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_ORDER_NAME = "执行顺序.md"
+_ORDER_NAME = "execution-order.md"
 
 
 def _is_non_empty(path: Path) -> bool:

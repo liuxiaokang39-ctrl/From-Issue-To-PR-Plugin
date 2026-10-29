@@ -8,8 +8,8 @@
     python evals/verify_artifacts.py docs/dev-docs/001
 
 开发序号目录即 docs/dev-docs/<开发序号>。约定产物为 `test-process/` 下的
-`1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`，
-须同时存在且内容非空。
+`1-unit-whitebox-test-process.md`、`2-integration-whitebox-test-process.md`、
+`3-real-deployment-blackbox-test-process.md`，须同时存在且内容非空。
 
 退出码：全部通过为 0；有缺失或内容为空为 1；参数错误为 2。
 """
@@ -20,9 +20,9 @@ import sys
 from pathlib import Path
 
 _FILENAMES = (
-    "1-单元白盒测试流程.md",
-    "2-集成白盒测试流程.md",
-    "3-真实部署黑盒测试流程.md",
+    "1-unit-whitebox-test-process.md",
+    "2-integration-whitebox-test-process.md",
+    "3-real-deployment-blackbox-test-process.md",
 )
 
 

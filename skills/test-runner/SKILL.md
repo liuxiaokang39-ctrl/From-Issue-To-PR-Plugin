@@ -1,6 +1,6 @@
 ---
 name: test-runner
-description: 按测试流程执行测试：读取 docs/dev-docs/<开发序号>/test-process/ 下的单元白盒、集成白盒、真实部署黑盒测试流程，按流程文档配置沙箱环境并按序执行全部场景，如实记录命令与输出，失败时按规则修复或产出测试报告，全部通过后提交并推送测试代码与报告。当用户要求执行测试、跑测试流程、运行单元白盒 / 集成白盒 / 真实部署黑盒测试、生成测试报告或测试未通过报告，或提到「执行测试」「跑测试」「测试报告」「测试未通过」「测试失败」等说法时使用；典型输入为 docs/dev-docs/<开发序号>/test-process/ 下的三份测试流程文档。
+description: 按测试流程执行测试：读取 docs/dev-docs/<开发序号>/test-process/ 下的单元白盒、集成白盒、真实部署黑盒测试流程，按流程文档配置沙箱环境并按序执行全部场景，如实记录命令与输出，失败时按规则修复或产出测试报告，全部通过后提交并推送测试代码与报告。当用户要求执行测试、跑测试流程、运行单元白盒 / 集成白盒 / 真实部署黑盒测试、生成测试报告或测试未通过报告，或提到「执行测试」「跑测试」「测试报告」「测试未通过」「测试失败」等说法时使用；典型输入为 docs/dev-docs/<开发序号>/test-process/ 下的 1-unit-whitebox-test-process.md、2-integration-whitebox-test-process.md、3-real-deployment-blackbox-test-process.md。
 compatibility: python3.12+
 metadata:
   author: XK_XK
@@ -18,13 +18,13 @@ metadata:
 
 ## 必要前提
 
-1. **测试流程文档存在且内容非空**：`docs/dev-docs/<开发序号>/test-process/` 下同时存在 `1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`。不满足时中断，回到 `test-planner` 阶段补齐（`INPUT_INVALID`）。
-2. **开发序号可确定**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值，且与上述三份文档所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号（`CONTEXT_MISSING`）。
+1. **测试流程文档存在且内容非空**：`docs/dev-docs/<开发序号>/test-process/` 下同时存在 `1-unit-whitebox-test-process.md`、`2-integration-whitebox-test-process.md`、`3-real-deployment-blackbox-test-process.md`。不满足时中断，回到 `test-planner` 阶段补齐（`INPUT_INVALID`）。
+2. **开发序号可确定**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/dev-context.md` 的登记值，且与上述三份文档所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号（`CONTEXT_MISSING`）。
 3. **工作区代码可读**：流程文档「工作区范围」中列出的被测文件存在且可逐文件读取。不满足时中断，使用 `AskUserQuestion` 向人类确认被测范围后再执行（`INPUT_INVALID`）。
 4. **测试所需外部资源已就绪**：流程文档「测试所需外部资源」中的测试框架、编译器、运行时与依赖已按文档补齐。缺失时先补齐；安装失败或资源不可用时中断该项，使用 `AskUserQuestion` 询问人类是否使用替代资源，不得跳过或伪造结果（`RESOURCE_UNAVAILABLE`）。
-5. **真实部署黑盒已获人类审核**：`3-真实部署黑盒测试流程.md` 的场景列表与执行步骤已获人类审核确认。未经确认时不得执行该层，使用 `AskUserQuestion` 取得审核结论后再继续（`NOT_REVIEWED`）。
+5. **真实部署黑盒已获人类审核**：`3-real-deployment-blackbox-test-process.md` 的场景列表与执行步骤已获人类审核确认。未经确认时不得执行该层，使用 `AskUserQuestion` 取得审核结论后再继续（`NOT_REVIEWED`）。
 6. **沙箱环境可配置**：能依据流程文档「测试所需外部资源」与「注意事项」提供的信息配置沙箱环境（网络、端口、依赖服务、环境变量等）。无法配置时中断，使用 `AskUserQuestion` 向人类确认环境配置后再执行（`SANDBOX_UNAVAILABLE`）。
-7. **git 与 gh 可用，分支为登记分支**：进入第 5 步提交前，`git status` 与 `gh auth status` 均可成功执行，登记文件指定的 worktree 与分支可用；执行前用 `git branch --show-current` 检查当前分支是否为登记「分支名」，不是时切换到该分支，切换失败则中断。不满足时不得执行第 5 步，中断并提示人类配置后重试，不得跳过 commit 与 push（`GIT_UNAVAILABLE`）。
+7. **git 与 gh 可用，分支为登记分支**：进入第 5 步提交前，`git status` 与 `gh auth status` 均可成功执行，登记文件指定的项目根目录与分支可用；执行前在项目根目录内用 `git branch --show-current` 检查当前分支是否为登记「分支名」，不是时切换到该分支，切换失败则中断。不满足时不得执行第 5 步，中断并提示人类配置后重试，不得跳过 commit 与 push（`GIT_UNAVAILABLE`）。
 
 ## 执行约束
 
@@ -42,11 +42,11 @@ metadata:
 - 禁止：擅自修改测试流程文档或期望结果以迁就执行结果；流程有问题时回退到 `test-planner`。
 - 禁止：对「按开发流程图的状态流转不可能达到测试目标」的失败修改代码迁就测试，只能产出失败报告。
 - 禁止：执行未经人类审核确认的真实部署黑盒场景。
-- 必须：开发规范（`docs/开发规范/`）只读；开发序号、分支名、worktree 路径与工作区一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行。
-- 禁止：创建 / 重命名 / 删除开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
+- 必须：开发规范（`docs/dev-standards/`）只读；开发序号、分支名、项目根目录与工作区一律取自 `docs/dev-docs/<开发序号>/dev-context.md`，只按登记值执行，执行前在项目根目录内按登记分支名自检并切换。
+- 禁止：创建 / 重命名 / 删除开发分支，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
 - 必须：凡需要向人类提问或确认的环节（替代资源、环境配置、失败处理去向等），一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；人类可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
 - 只能修改：工作区代码仅限于「代码逻辑正常，仅因入参校验缺失或未覆盖测试样例」与「代码逻辑正常，仅因返回值格式与预期不符」两种失败情形。
-- 只能写入：`docs/dev-docs/<开发序号>/test-report/` 下的 `测试报告.md` 与 `failure-report/` 下的失败报告，以及按项目约定放置的测试代码；除上述产物外不新增其他文件或目录。
+- 只能写入：`docs/dev-docs/<开发序号>/test-report/` 下的 `test-report.md` 与 `failure-report/` 下的 `<seq>-test-failure-report.md`，以及按项目约定放置的测试代码；除上述产物外不新增其他文件或目录。
 
 **参考文件**：本 Skill 附带下列文件，此处仅**显式声明其存在**，不展开其正文：
 
@@ -58,7 +58,7 @@ metadata:
 
 ### 1. 读取测试流程与真实实现
 
-- 读取 `docs/dev-docs/<开发序号>/test-process/` 下的 `1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md`；
+- 读取 `docs/dev-docs/<开发序号>/test-process/` 下的 `1-unit-whitebox-test-process.md`、`2-integration-whitebox-test-process.md`、`3-real-deployment-blackbox-test-process.md`；
 - 读取流程文档「工作区范围」中列出的被测文件与函数，确认当前实现；
 - 检查项目是否已有测试代码；存在时评估其能否覆盖三份流程文档的全部场景，记录可覆盖项与缺口项，作为第 2 步修改或补充的依据。
 
@@ -85,7 +85,7 @@ metadata:
 
 修复须保持函数公开属性不变，只做满足测试所需的最小改动。修改后重新执行受影响场景，并重新执行同文档内的关联场景与后序测试，不得只跑失败场景就宣称通过。
 
-若失败由设计逻辑本身导致，即按开发流程图的状态流转不可能达到测试目标，则不得修改代码迁就测试；应在 `docs/dev-docs/<开发序号>/test-report/failure-report/` 下生成 `<序号>-测试未通过报告.md`（同一流程下存在多份失败报告时按序号递增区分），并按失败报告模板记录失败类型与场景、命令与结果、期望与实际、设计原因及为何无法通过测试目标。
+若失败由设计逻辑本身导致，即按开发流程图的状态流转不可能达到测试目标，则不得修改代码迁就测试；应在 `docs/dev-docs/<开发序号>/test-report/failure-report/` 下生成 `<seq>-test-failure-report.md`（同一流程下存在多份失败报告时按序号递增区分），并按失败报告模板记录失败类型与场景、命令与结果、期望与实际、设计原因及为何无法通过测试目标。
 
 **参考文件**：本 Skill 附带 `assets/test-fail-report-template.md`（测试未通过报告样板）。此处仅**显式声明其存在**；**仅在本步骤生成失败报告时**读取该模板，其余阶段不展开其正文。
 
@@ -93,8 +93,8 @@ metadata:
 
 ### 4. 生成测试报告
 
-- 全部场景实际执行并通过（含第 3 步修复后复测通过）时，在 `docs/dev-docs/<开发序号>/test-report/` 下生成 `测试报告.md`，记录执行环境、各场景的命令与实际结果、通过结论；
-- 存在设计逻辑原因导致的失败时，按第 3 步在 `failure-report/` 下生成失败报告；同一流程中已通过的场景仍按上一条生成 `测试报告.md`；
+- 全部场景实际执行并通过（含第 3 步修复后复测通过）时，在 `docs/dev-docs/<开发序号>/test-report/` 下生成 `test-report.md`，记录执行环境、各场景的命令与实际结果、通过结论；
+- 存在设计逻辑原因导致的失败时，按第 3 步在 `failure-report/` 下生成失败报告；同一流程中已通过的场景仍按上一条生成 `test-report.md`；
 - 报告内容必须与执行时的实际命令和输出一致，不得事后补写、润色或虚构。
 
 **参考文件**：本 Skill 附带 `assets/test-pass-report-template.md`（测试通过报告样板）。此处仅**显式声明其存在**；**仅在本步骤生成测试报告时**读取该模板，其余阶段不展开其正文。失败报告模板见第 3 步。
@@ -103,9 +103,9 @@ metadata:
 
 ### 5. 提交并推送测试产物
 
-全部场景实际执行通过且第 4 步的 `测试报告.md` 写入后，才执行本步：
+全部场景实际执行通过且第 4 步的 `test-report.md` 写入后，才执行本步：
 
-- 将测试代码与 `docs/dev-docs/<开发序号>/test-report/测试报告.md` 提交到登记文件指定的分支，提交信息由本次测试产物总结而来，长度不超过 128 字符；
+- 将测试代码与 `docs/dev-docs/<开发序号>/test-report/test-report.md` 提交到登记文件指定的分支，提交信息由本次测试产物总结而来，长度不超过 128 字符；
 - 提交后随即执行一次 push；禁止在 `main` 分支上 commit 或 push；
 - 存在失败报告、未执行场景或测试报告未写入时，禁止执行本步，直接进入第 6 步。
 
@@ -116,11 +116,11 @@ metadata:
 交付前逐项检查以下内容：
 
 - 三份测试流程文档中的全部场景均已实际执行，未执行数为 0，无跳过或静默吞错的场景；
-- `docs/dev-docs/<开发序号>/test-report/测试报告.md` 存在且内容非空，其中的场景编号、执行命令与实际结果与执行记录一致；
-- 存在失败报告时，文件位于 `test-report/failure-report/` 且命名为 `<序号>-测试未通过报告.md`，内容非空，失败类型与场景、命令与结果、期望与实际均已填写；
+- `docs/dev-docs/<开发序号>/test-report/test-report.md` 存在且内容非空，其中的场景编号、执行命令与实际结果与执行记录一致；
+- 存在失败报告时，文件位于 `test-report/failure-report/` 且命名为 `<seq>-test-failure-report.md`，内容非空，失败类型与场景、命令与结果、期望与实际均已填写；
 - 报告中不含事后补写、润色或虚构的内容，也未把未执行或失败的场景计入通过；
 - 每个场景执行结束后均已清理该场景产生的缓存文件，后续场景的执行结果不受前一场景残留影响；
-- 全部场景通过时，测试代码与 `测试报告.md` 已提交到登记文件指定的分支并 push，且未在 `main` 分支上提交；
+- 全部场景通过时，测试代码与 `test-report.md` 已提交到登记文件指定的分支并 push，且未在 `main` 分支上提交；
 - 除测试报告、失败报告与按项目约定放置的测试代码外，未新增其他文件或目录。
 
 **校验脚本**：本 Skill 附带 `evals/verify_artifacts.py`（校验测试报告与失败报告的位置、命名与内容非空）。此处仅**显式声明其存在**；**仅在本步骤**调用该脚本：
@@ -139,9 +139,9 @@ python evals/verify_artifacts.py docs/dev-docs/<开发序号>
 
 ```text
 test_runner(
-  开发序号: string,                    // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的登记值
+  开发序号: string,                    // 必填：取自 docs/dev-docs/<开发序号>/dev-context.md 的登记值
   测试流程目录: string,                // 必填：docs/dev-docs/<开发序号>/test-process/，三份流程文档须内容非空
-  测试分支: string,                    // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的「分支名」，commit 与 push 使用
+  测试分支: string,                    // 必填：取自 docs/dev-docs/<开发序号>/dev-context.md 的「分支名」，commit 与 push 使用
   真实部署黑盒审核结论: string,        // 必填：已确认 / 不适用；未确认时不得执行该层
   测试所需外部资源: string[] | null,   // 可选：流程文档「测试所需外部资源」列出的资源；缺省按流程文档自行准备
 ) -> SkillResult
@@ -161,8 +161,8 @@ SkillError {
 
 输出产物：
 
-1. `docs/dev-docs/<开发序号>/test-report/测试报告.md`：通过场景的执行环境、命令、实际结果与结论；
-2. `docs/dev-docs/<开发序号>/test-report/failure-report/<序号>-测试未通过报告.md`：设计逻辑原因导致的失败记录，按序号递增区分；
+1. `docs/dev-docs/<开发序号>/test-report/test-report.md`：通过场景的执行环境、命令、实际结果与结论；
+2. `docs/dev-docs/<开发序号>/test-report/failure-report/<seq>-test-failure-report.md`：设计逻辑原因导致的失败记录，按序号递增区分；
 3. 测试代码：位于项目约定的独立测试目录（如 `tests/`、`__tests__/`）或独立测试文件中；
 4. commit 与 push 记录：全部场景通过后，测试代码与测试报告提交到登记分支并 push；存在失败或未执行场景时无此产物。
 
@@ -172,7 +172,7 @@ SkillError {
 | --- | --- | --- |
 | 测试流程文档缺失或为空 | `test-process/` 下三份流程文档任一缺失或内容为空 | 中断，不执行测试；回到 `test-planner` 阶段补齐（`INPUT_INVALID`） |
 | 工作区代码不可读 | 「工作区范围」列出的被测文件不存在或无法读取 | 中断；使用 `AskUserQuestion` 向人类确认被测范围后再执行（`INPUT_INVALID`） |
-| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的开发序号与流程文档所在目录不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/dev-context.md` 不存在，或登记的开发序号与流程文档所在目录不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
 | 当前分支不是登记分支 | `git branch --show-current` 与登记「分支名」不一致，且切换失败 | 中断并保留原始报错；提示人类检查分支状态后重试，禁止自行创建分支（`BRANCH_MISMATCH`） |
 | 流程文档与真实实现不一致 | 场景期望结果不可判定，或与当前实现矛盾 | 停止该场景；回到 `test-planner` 重新设计，不得改写期望结果迁就执行（`PROCESS_INVALID`） |
 | 真实部署黑盒未经人类审核 | 人类尚未对该层场景列表与执行步骤给出审核结论 | 中断该层执行；使用 `AskUserQuestion` 取得审核结论后再继续（`NOT_REVIEWED`） |
@@ -180,7 +180,7 @@ SkillError {
 | 沙箱环境无法配置 | 依据流程文档信息无法配置沙箱的网络、端口、依赖服务或环境变量 | 中断，不执行测试；说明缺失项并用 `AskUserQuestion` 向人类确认环境配置后再执行（`SANDBOX_UNAVAILABLE`） |
 | git 或 gh 不可用 | `git status` 或 `gh auth status` 报错，或登记文件指定的测试分支不可用 | 中断并保留原始报错；提示人类配置 git / gh 后重试，禁止跳过 commit 与 push（`GIT_UNAVAILABLE`） |
 | 场景执行失败 | 命令非零退出、断言失败或输出与期望结果不符 | 进入第 3 步；按可修复条件修复并复测，或按设计逻辑原因产出失败报告（`TEST_FAILED`） |
-| 设计逻辑原因导致失败 | 按开发流程图的状态流转不可能达到测试目标 | 不修改代码；在 `failure-report/` 下生成 `<序号>-测试未通过报告.md` 并继续其余场景（`DESIGN_FAILURE`） |
+| 设计逻辑原因导致失败 | 按开发流程图的状态流转不可能达到测试目标 | 不修改代码；在 `failure-report/` 下生成 `<seq>-test-failure-report.md` 并继续其余场景（`DESIGN_FAILURE`） |
 | 报告写入失败 | 写入 `test-report/` 或 `failure-report/` 失败（路径非法、权限或磁盘错误） | 中断并保留原始报错；提示人类检查目录后重试（`WRITE_FAILED`） |
 | commit 或 push 失败 | git / gh 命令非零退出，或提交钩子失败 | 中断并保留原始报错；修复问题后新建 commit，禁止 `--amend`、`--no-verify`；push 失败同样不得跳过（`GIT_FAILED`） |
 | 校验脚本无法执行 | Python 未安装、脚本路径错误或权限不足，且报错不属于上述业务错误 | 中断并保留原始报错；提示人类安装 Python 或检查路径后重试，禁止以手工检查替代脚本（`SCRIPT_FAILED`） |
@@ -200,14 +200,14 @@ SkillError {
 测试所需外部资源：["pytest", "python3.12", "postgresql"]
 ```
 
-关键步骤：读取三份流程文档与 `src/orders/` 真实实现 → 检查现有 `tests/` 覆盖并补充缺失场景 → 依据流程文档配置沙箱网络与 postgresql 依赖 → 在沙箱内按序执行单元白盒 18 个、集成白盒 9 个、真实部署黑盒 5 个场景，逐个记录命令与输出并在每个场景后清理缓存 → 无失败 → 按通过报告模板生成 `测试报告.md` → 将测试代码与报告 commit 并 push 到 `feat/001-order` → 运行 `python evals/verify_artifacts.py docs/dev-docs/001` 通过 → 向人类汇报。
+关键步骤：读取三份流程文档与 `src/orders/` 真实实现 → 检查现有 `tests/` 覆盖并补充缺失场景 → 依据流程文档配置沙箱网络与 postgresql 依赖 → 在沙箱内按序执行单元白盒 18 个、集成白盒 9 个、真实部署黑盒 5 个场景，逐个记录命令与输出并在每个场景后清理缓存 → 无失败 → 按通过报告模板生成 `test-report.md` → 将测试代码与报告 commit 并 push 到 `feat/001-order` → 运行 `python evals/verify_artifacts.py docs/dev-docs/001` 通过 → 向人类汇报。
 
 输出：
 
 ```text
 status: success
 artifacts: [
-  "docs/dev-docs/001/test-report/测试报告.md",
+  "docs/dev-docs/001/test-report/test-report.md",
   "tests/test_order_service.py"
 ]
 errors: []
@@ -225,15 +225,15 @@ errors: []
 测试所需外部资源：null
 ```
 
-关键步骤：按流程文档配置沙箱环境 → 执行单元白盒场景，`U-005` 期望「退款审批驳回后订单回到已支付状态」失败；核对开发文档与流程图后确认该状态流转在设计上不可达 → 未修改源码，按失败报告模板生成 `failure-report/1-测试未通过报告.md` → 其余已通过场景生成 `测试报告.md` → 因存在失败场景未执行 commit 与 push → 校验脚本退出码 0。
+关键步骤：按流程文档配置沙箱环境 → 执行单元白盒场景，`U-005` 期望「退款审批驳回后订单回到已支付状态」失败；核对开发文档与流程图后确认该状态流转在设计上不可达 → 未修改源码，按失败报告模板生成 `failure-report/1-test-failure-report.md` → 其余已通过场景生成 `test-report.md` → 因存在失败场景未执行 commit 与 push → 校验脚本退出码 0。
 
 输出：
 
 ```text
 status: partial
 artifacts: [
-  "docs/dev-docs/002/test-report/测试报告.md",
-  "docs/dev-docs/002/test-report/failure-report/1-测试未通过报告.md"
+  "docs/dev-docs/002/test-report/test-report.md",
+  "docs/dev-docs/002/test-report/failure-report/1-test-failure-report.md"
 ]
 errors: [
   { code: "DESIGN_FAILURE", message: "U-005 按开发流程图的状态流转不可能达到测试目标，已产出失败报告", recoverable: false }
