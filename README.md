@@ -24,12 +24,14 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 请读取 docs/install/codex.md，按其中步骤为我安装 From Issue To PR 插件。
 ```
 
+如果想安装指定版本，请前往发行版下载对应的 codex.md 文件。
+
 安装完成后还需要两步：
 
 1. **同意钩子**：插件安装不会自动信任 Hook。按 `docs/install/codex.md` 的指引运行 `/hooks`，逐条查看并信任 `from-issue-to-pr` 的 Hook 条目。
 2. **重启应用**：重启安装本插件的应用，使插件与 Hook 重新加载后生效。
 
-## 最小可运行示例
+## 快速启动
 
 安装完成后，在对话框输入下面这行启动全流程：
 
