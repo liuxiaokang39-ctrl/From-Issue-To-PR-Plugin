@@ -105,7 +105,7 @@ python scripts/install_codex.py --scope user
 
 脚本行为：
 
-- `commands/` → `~/.codex/prompts/`，Codex 以 `/prompts:xxx` 暴露入口；`xxx` 为去掉 `.md` 的文件名，例如 `workflow.md` 对应 `/prompts:workflow`。
+- `commands/` → `~/.codex/prompts/`，Codex 以 `/prompts:xxx` 暴露入口；`xxx` 为去掉 `.md` 的文件名，插件只提供 `fitp-workflow.md` 与 `fitp-issueWriter.md` 两条命令，分别对应 `/prompts:fitp-workflow` 与 `/prompts:fitp-issueWriter`。
 - `agents/*.toml` → `~/.codex/agents/`（或项目 `.codex/agents/`），并在 `config.toml` 注册 `[agents.<role>]` 的 `description` 与 `config_file`，同时确保 `features.multi_agent = true`。
 - 常用参数：`--dry-run` 只打印计划；`--prompts-dir` / `--agents-dir` / `--config` 覆盖默认目录。
 - 脚本可重复执行：prompts 文件会覆盖更新，已注册的 `[agents.<role>]` 与 `features.multi_agent` 不会重复写入。
@@ -115,12 +115,12 @@ python scripts/install_codex.py --scope user
 ### 4.4 验证接入结果 ［Agent 执行］
 
 ```powershell
-(Get-ChildItem "$HOME\.codex\prompts\*.md").Count
+(Get-ChildItem "$HOME\.codex\prompts\fitp-*.md").Count
 Test-Path "$HOME\.codex\agents\workflow-orchestrator.toml"
 Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.workflow-orchestrator\]'
 ```
 
-期望：命令数为 `10`；Agent 文件存在；`config.toml` 同时命中 `multi_agent` 与 `[agents.workflow-orchestrator]`。不符时报告脚本输出与实际文件状态，不要静默重试。
+期望：本插件的命令数为 `2`，且仅有 `fitp-workflow.md` 与 `fitp-issueWriter.md`（安装脚本也会校验该数量）；Agent 文件存在；`config.toml` 同时命中 `multi_agent` 与 `[agents.workflow-orchestrator]`。不符时报告脚本输出与实际文件状态，不要静默重试。
 
 ## 步骤 5：重启并加载插件 ［用户操作］
 
@@ -134,7 +134,7 @@ Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.w
 
 使用一次性测试仓库，不要写入用户正在开发的项目。Agent 向用户提供以下测试项并收集结果。
 
-1. 新建 Codex 会话，问「当前插件工作流包含哪些阶段？」。`SessionStart` 生效时，回答应包含 8 个阶段、`spec-manager` 管理角色与 `docs/dev-docs/` 产物约定。
+1. 新建 Codex 会话，问「当前插件工作流包含哪些阶段？」。`SessionStart` 生效时，回答应包含 8 个阶段、`spec-manager` 管理角色、两条固定入口命令（`/prompts:fitp-workflow`、`/prompts:fitp-issueWriter`）与阶段续跑约定。
 2. 在 `/plugins` 确认插件已启用；在 `/hooks` 确认 4 个事件的条目已信任。
 3. 在一次性仓库中让 Codex 执行 `git reset --hard`。`PreToolUse` 生效时应被拒绝，并给出插件拦截原因。
 4. 让 Codex 新建 `docs/dev-docs/999/smoke-issue.md`。`PreToolUse` 生效时应被拒绝，并说明序号目录只能由 `spec-manager` 创建。
@@ -156,10 +156,16 @@ Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.w
 | --- | --- | --- |
 | `skills/`（8 个阶段 Skill + 1 个管理角色） | 是 | `$issue-writer`、`$dev-doc-writer`、`$task-planner` 等阶段 Skill；`$spec-manager` 为管理角色 |
 | `hooks/hooks.json`（4 个生命周期 Hook） | 是 | 经 `/hooks` 信任后自动触发 |
-| `commands/`（10 个命令） | 安装时复制到 `~/.codex/prompts/` | 复制后以 `/prompts:xxx` 调用，例如 `/prompts:workflow` |
+| `commands/`（2 个命令） | 安装时复制到 `~/.codex/prompts/` | 复制后以 `/prompts:xxx` 调用：`/prompts:fitp-workflow`（全流程 / 阶段续跑）、`/prompts:fitp-issueWriter`（仅需求确认并创建 Issue） |
 | `agents/workflow-orchestrator.md` | 安装时复制 TOML 到 `~/.codex/agents/` 或项目 `.codex/agents/` | 由 Codex 子代理系统加载角色定义 |
 
-走完整流程时，可用 `/prompts:workflow 需求描述`，也可让 Codex 依次调用
+走完整流程时，输入 `/prompts:fitp-workflow` 启动，按提示描述需求；已有 Issue 时用 `/prompts:fitp-workflow <Issue链接>` 跳过需求询问。每个阶段结束后复制提示中的续跑命令到新对话继续：
+
+```text
+/prompts:fitp-workflow -devId=<开发序号> -stage=<下一阶段>
+```
+
+测试失败时按失败报告使用 `-reStage=<dev-doc|implement|test-plan>` 回流。也可让 Codex 依次调用
 `$issue-writer` → `$dev-doc-writer` → `$task-planner` → `$implementer`
 → `$test-planner` → `$test-runner` → `$project-doc-sync` → `$pr-creator`，并在各 Skill 定义的人工门禁处
 停下来询问用户。开发规范检查与开发信息分配由 `spec-manager` 管理角色承担，不占阶段序号。
@@ -168,7 +174,7 @@ Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.w
 
 | 事件 | Codex 工具名 | 行为 | 是否阻断 |
 | --- | --- | --- | --- |
-| `SessionStart` | — | 注入 8 阶段工作流、`spec-manager` 管理角色与已有开发序号 | 否 |
+| `SessionStart` | — | 注入 8 阶段工作流、`spec-manager` 管理角色、两条固定入口命令与阶段续跑规则，并列出已有开发序号 | 否 |
 | `PreToolUse` | `Bash`、`apply_patch` | 拦截强制推送、`reset --hard`、`clean -f`、强删分支、`gh pr merge --admin` 等不可逆命令；非 `spec-manager` 写入开发规范、新建序号目录、操作分支或 worktree 时拒绝 | 是（deny） |
 | `PostToolUse` | `apply_patch` | 解析补丁中的 `*** Add File:` / `*** Update File:` / `*** Delete File:` 路径，对 `docs/dev-docs/<序号>/` 产物运行对应 Skill 的 `evals/` 校验 | 否（回传校验结果） |
 | `Stop` | — | 最近一个开发序号目录缺产物时返回一次继续执行，让模型补齐或向用户说明 | 一次继续 |
