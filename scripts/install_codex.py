@@ -22,6 +22,7 @@ from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DESCRIPTION = "按 8 个阶段（含 spec-manager 管理角色）把需求推进到 PR 的编排 Agent"
+EXPECTED_COMMAND_COUNT = 2
 
 
 def parse_args() -> argparse.Namespace:
@@ -140,6 +141,14 @@ def main() -> int:
     command_files = sorted((PLUGIN_ROOT / "commands").glob("*.md"))
     agent_tomls = sorted((PLUGIN_ROOT / "agents").glob("*.toml"))
 
+    if len(command_files) != EXPECTED_COMMAND_COUNT:
+        print(
+            f"commands/ 下命令数为 {len(command_files)}，期望 {EXPECTED_COMMAND_COUNT}"
+            "（fitp-workflow、fitp-issueWriter）；请检查命令文件后重试。",
+            file=sys.stderr,
+        )
+        return 1
+
     print(f"插件目录：{PLUGIN_ROOT}")
     print(f"prompts 目录：{prompts_dir}")
     print(f"agents 目录：{agents_dir}")
@@ -174,7 +183,7 @@ def main() -> int:
             config_path.write_text(updated, encoding="utf-8")
 
     print("\n安装结果：")
-    print(f"- 命令提示词 {len(copied_commands)} 个：")
+    print(f"- 命令提示词 {len(copied_commands)} 个（期望 {EXPECTED_COMMAND_COUNT}）：")
     for dest in copied_commands:
         print(f"    {dest}")
     print(f"- Agent 角色 {len(copied_agents)} 个：")

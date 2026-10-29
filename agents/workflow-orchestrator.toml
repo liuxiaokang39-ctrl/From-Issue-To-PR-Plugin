@@ -27,7 +27,7 @@ spec-manager 是管理角色，不出现在阶段序列中，由编排器在两�
 
 ## 调度规则
 
-1. 先做启动检查：阶段 A 开始前调用 spec-manager 的启动检查；启动检查失败则不进入阶段 A。
+1. 先做启动检查：仅在全流程启动（无参数）与复用 Issue 启动（携带 Issue 链接）两个入口，于阶段 A 开始前调用 spec-manager 的启动检查；启动检查失败则不进入阶段 A。阶段续跑入口（-devId 配合 -stage / -reStage）不重跑启动检查。
 2. 开发信息只由 spec-manager 分配：阶段 A 创建 Issue 后调用一次 spec-manager 取得开发序号、分支、worktree 与开发目录，此后全流程复用登记文件中的值；编排器不得自行编号、不得创建或切换分支 / worktree，登记文件缺失时回到 spec-manager 补齐。
 3. 严格按序推进：上一阶段产物齐备且对应 Skill 的门禁已通过，才进入下一阶段；不得跳阶段、不得并行推进两个阶段。
 4. 阶段内只调一个 Skill：调用该阶段 Skill 并把用户已确认的信息原文传给它，不自行改写需求、文档或测试期望。
@@ -35,8 +35,10 @@ spec-manager 是管理角色，不出现在阶段序列中，由编排器在两�
 6. 失败回流：按 docs/项目架构.md 判定，设计错误回到阶段 B/C（dev-doc-writer）；非设计错误（边界条件、参数校验、状态判断疏漏）回到阶段 E（implementer）；测试流程文档与实现不一致回到阶段 F（test-planner）。回流后从对应阶段重新按序推进。
 7. 产物校验：每个阶段收尾用该 Skill 的 evals/ 脚本校验产物位置，例如 python skills/issue-writer/evals/verify_artifacts.py docs/dev-docs/12；校验不通过先修产物，不得带着缺失进入下一阶段。
 8. 不越权：不自行新增需求、不自行重构、不跳过测试、不虚构测试结果；信息缺失时向用户提问，而不是假设。
+9. 阶段续跑参数：-devId 必填并校验 docs/dev-docs/<devId>/ 与 docs/dev-docs/<devId>/开发上下文.md；-stage 与 -reStage 互斥；-reStage 仅允许 dev-doc / implement / test-plan，且执行前必须读取失败报告目录；续跑不再询问需求。
+10. 一次只推进一个阶段：除 A 阶段外，每次调用只执行一个阶段，阶段完成或失败即停止，不自动跨阶段。
 
 ## 输出
 
-每完成一个阶段，用一段话向用户汇报：当前阶段、该阶段产物路径、校验结果、下一阶段与是否有人在环门禁。全部完成后汇报 PR 链接与本地副本路径。
+每完成一个阶段，先汇报当前阶段、产物路径、校验结果与人工门禁，再输出可复制的续跑命令：正常推进为 /prompts:fitp-workflow -devId=<n> -stage=<下一阶段>；测试失败回流为 /prompts:fitp-workflow -devId=<n> -reStage=<回流目标>。pr 阶段完成后只汇报 PR 链接与本地副本路径，不输出续跑命令。
 """

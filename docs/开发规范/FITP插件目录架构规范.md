@@ -70,16 +70,8 @@ From-Issue-To-PR-Skill/
 │   ├── workflow-orchestrator.md      # 插件级 Agent（Markdown 角色定义），按 8 阶段顺序调度并处理门禁与失败回流；spec-manager 为管理角色
 │   └── workflow-orchestrator.toml    # 同一 Agent 的 Codex TOML 角色配置，供安装脚本复制到 Codex agents 目录
 ├── commands/
-│   ├── workflow.md                   # 全流程命令
-│   ├── issue.md                      # A 需求确认
-│   ├── spec.md                       # 管理角色：开发规范与开发信息（不占阶段序号）
-│   ├── dev-doc.md                    # B、C 状态流转流程图与开发文档
-│   ├── task.md                       # D 任务拆分
-│   ├── implement.md                  # E 编码实现
-│   ├── test-plan.md                  # F 测试流程与资源准备
-│   ├── test-run.md                   # G、H、J、K 按流程执行测试与判定
-│   ├── doc-sync.md                   # I 项目文档同步
-│   └── pr.md                         # L、M、N CI 测试与提交 PR
+│   ├── fitp-workflow.md              # 全流程入口：启动检查、需求询问、逐阶段推进与 -devId/-stage/-reStage 断点续跑
+│   └── fitp-issueWriter.md           # 独立需求确认入口：只创建远端 Issue，不分配开发信息、不本地留档
 ├── skills/
 │   ├── issue-writer/
 │   │   ├── SKILL.md

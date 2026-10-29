@@ -31,14 +31,28 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 
 ## 最小可运行示例
 
-安装完成后，直接在对话框输入下面这行即可使用本插件：
+安装完成后，在对话框输入下面这行启动全流程：
 
-```
-/prompts:workflow 需求描述
+```text
+/prompts:fitp-workflow
 ```
 
-- `需求描述`：你想干什么，用一句话写清楚。
-- 开发序号、分支、worktree 与开发目录由 `spec-manager` 自动分配，无需手动提供。
+插件先做启动检查，再提示「请描述本次开发计划的需求」；描述后进入 A 阶段，由 `issue-writer` 创建 Issue 并分配开发信息。每个阶段结束时都会给出下一条可复制的续跑命令：
+
+```text
+/prompts:fitp-workflow -devId=<开发序号> -stage=<下一阶段>
+```
+
+测试失败时按失败报告使用 `-reStage=<dev-doc|implement|test-plan>` 回流。已有 Issue 时可直接续接：
+
+```text
+/prompts:fitp-workflow <Issue链接>
+```
+
+只想确认需求并创建 Issue，使用独立入口 `/prompts:fitp-issueWriter`；它不调用 `spec-manager`、不分配开发序号，也不生成本地留档。
+
+- 开发序号、分支、worktree 与开发目录由 `spec-manager` 自动分配与登记，无需手动提供。
+- 阶段续跑命令可直接粘贴到新对话，从下一阶段继续，避免长链路依赖同一上下文。
 
 ## 许可证
 
