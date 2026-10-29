@@ -1,6 +1,6 @@
 # skill目录架构规范
 
-本规范规定 Skill 目录的组织方式与各组成部分的职责。所有 Skill 的目录必须依据本规范组织；`SKILL.md` 的内容格式另见 [SKILL内容开发规范.md](SKILL内容开发规范.md)。
+本规范规定 Skill 目录的组织方式与各组成部分的职责。所有 Skill 的目录必须依据本规范组织；`SKILL.md` 的内容格式另见 [skill-content-development-spec.md](skill-content-development-spec.md)。
 
 ## 单个 Skill 的工作区组织规范
 

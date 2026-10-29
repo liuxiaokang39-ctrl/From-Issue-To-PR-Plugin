@@ -18,11 +18,11 @@
 | 文档类型 | 定位 | 生命周期 | 典型位置 |
 | --- | --- | --- | --- |
 | **项目文档** | 描述项目**当前最新状态** | 长期维护，随代码演进持续更新 | `README.md`、`docs/` 下的常驻说明 |
-| **开发规范** | 描述项目**当前最新的编码与目录约束** | 长期维护，只保留最新约束，变更写入迁移信息 | `docs/开发规范/` |
+| **开发规范** | 描述项目**当前最新的编码与目录约束** | 长期维护，只保留最新约束，变更写入迁移信息 | `docs/development-standards/` |
 | **开发文档** | 指导**某一次开发**的设计与实现 | 有时效性，是本次开发的一系列迁移文档 | `docs/dev-docs/` |
 
 - 项目文档只有一个「当前版本」，始终与真实代码对齐；开发文档按序号累积，记录每次开发的迁移过程。
-- 开发规范同样只有一个「当前版本」，其历史变更写入 `docs/开发规范/迁移信息/<开发序号>-<规范名>.md`（流程启动检查引入的变更用 `000` 作为序号），规范文档内不保留历史版本。
+- 开发规范同样只有一个「当前版本」，其历史变更写入 `docs/development-standards/migration-info/<开发序号>-<规范名>.md`（流程启动检查引入的变更用 `000` 作为序号），规范文档内不保留历史版本。
 - 因此「同步项目文档与实际代码」由 `project-doc-sync` 承担，`dev-doc-writer` 不负责项目文档；开发规范的建立与维护由 `spec-manager` 承担。
 
 ### 2.2 状态流转流程图
@@ -59,7 +59,7 @@ flowchart TD
 | 状态 | 承担 Skill | 主要输入 | 主要产物 |
 | --- | --- | --- | --- |
 | A 需求明确 | `issue-writer` | 用户口述需求、项目背景 | Issue（远端仓库）+ `docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md` 本地留档；创建 Issue 后调用一次 `spec-manager` 取得开发信息 |
-| 管理：规范与开发信息（不占阶段序号） | `spec-manager` | 项目代码与目录现状（规范检查）；已确认 Issue（开发信息分配） | `docs/开发规范/Rust编码规范.md`、`docs/开发规范/项目目录架构规范.md`、`docs/dev-docs/<开发序号>/` 目录骨架、`docs/dev-docs/<开发序号>/开发上下文.md`（开发序号、分支名、worktree 路径、工作区表格）、worktree（`<仓库名>-dev-<开发序号>`）与分支（`feat/<Issue编号>-<简述>`） |
+| 管理：规范与开发信息（不占阶段序号） | `spec-manager` | 项目代码与目录现状（规范检查）；已确认 Issue（开发信息分配） | `docs/development-standards/rust-coding-standards.md`、`docs/development-standards/project-directory-architecture-spec.md`、`docs/dev-docs/<开发序号>/` 目录骨架、`docs/dev-docs/<开发序号>/开发上下文.md`（开发序号、分支名、worktree 路径、工作区表格）、worktree（`<仓库名>-dev-<开发序号>`）与分支（`feat/<Issue编号>-<简述>`） |
 | B 制作状态流转流程图 | `dev-doc-writer` | 已确认的 Issue | `docs/dev-docs/<开发序号>/<标题>流程图.md`（状态流转） |
 | C 制作开发文档 | `dev-doc-writer` | Issue、代码库上下文、状态流转流程图 | `docs/dev-docs/<开发序号>/<标题>开发文档.md`（数据结构、函数定义） |
 | D 拆分任务 | `task-planner` | 开发文档与流程图 | `docs/dev-docs/<开发序号>/task-list/` 下的任务文件与 `执行顺序.md` |

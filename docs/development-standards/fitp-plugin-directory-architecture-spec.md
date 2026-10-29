@@ -1,6 +1,6 @@
 # FITP插件目录架构规范
 
-本规范规定 From Issue To PR（FITP）插件的目录架构：先给出标准 Codex 插件的目录基线，再说明本插件实际采用的目录结构与约定。单个 Skill 目录的组织方式见 [skill目录架构规范.md](skill目录架构规范.md)，`SKILL.md` 的内容格式见 [SKILL内容开发规范.md](SKILL内容开发规范.md)。
+本规范规定 From Issue To PR（FITP）插件的目录架构：先给出标准 Codex 插件的目录基线，再说明本插件实际采用的目录结构与约定。单个 Skill 目录的组织方式见 [skill-directory-architecture-spec.md](skill-directory-architecture-spec.md)，`SKILL.md` 的内容格式见 [skill-content-development-spec.md](skill-content-development-spec.md)。
 
 ## 标准 Codex 插件目录架构
 
@@ -123,14 +123,14 @@ From-Issue-To-PR-Skill/
 │       ├── evals/verify_artifacts.py
 │       └── references/{GitHub-CLI.md, GitHub-submit.md}
 ├── docs/
-│   ├── 开发规范/
-│   │   ├── FITP插件目录架构规范.md   # 本文件：插件级目录架构与本项目当前结构
-│   │   ├── skill目录架构规范.md      # 单个 Skill 目录的工作区组织
-│   │   └── SKILL内容开发规范.md      # SKILL.md 的内容格式
-│   ├── 项目架构.md                   # 核心目标、状态流转、两类文档、回流路径
-│   └── install/codex.md              # Codex 安装、Hook 信任与冒烟测试
-├── README.md                         # 插件简介、前置条件、安装与能力边界
-├── LICENSE                           # Apache-2.0
+│   ├── development-standards/
+│   │   ├── fitp-plugin-directory-architecture-spec.md   # 本文件：插件级目录架构与本项目当前结构
+│   │   ├── skill-directory-architecture-spec.md         # 单个 Skill 目录的工作区组织
+│   │   └── skill-content-development-spec.md            # SKILL.md 的内容格式
+│   ├── project-architecture.md                          # 核心目标、状态流转、两类文档、回流路径
+│   └── install/codex.md                                 # Codex 安装、Hook 信任与冒烟测试
+├── README.md                                           # 插件简介、前置条件、安装与能力边界
+├── LICENSE                                             # Apache-2.0
 └── .gitignore
 ```
 
@@ -151,7 +151,7 @@ From-Issue-To-PR-Skill/
 ### 目录约定
 
 - 使用者项目的产物一律落在其 `docs/dev-docs/<开发序号>/` 或 `docs/data-struct-and-interface/` 下，不写入本仓库。
-- 本仓库 `docs/` 只维护插件自身的规范、架构与安装说明；开发规范统一放在 `docs/开发规范/` 下。
+- 本仓库 `docs/` 只维护插件自身的规范、架构与安装说明；开发规范统一放在 `docs/development-standards/` 下。
 - `hooks/__pycache__/`、`scripts/__pycache__/` 为 Python 运行缓存，不属于源码，已由 `.gitignore` 的 `__pycache__/`、`*.pyc` 规则排除。
 - 新增 Skill 时在 `skills/` 下建同名目录并至少包含 `SKILL.md`；是否补 `references/`、`assets/`、`scripts/`、`evals/` 由该阶段是否需要决定。
 - 新增命令时在 `commands/` 下建 Markdown 文件，frontmatter 写 `description` 与 `argument-hint`，正文只声明调用哪个 Skill。

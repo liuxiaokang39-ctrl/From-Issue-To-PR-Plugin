@@ -36,7 +36,7 @@ description: 按 8 个阶段推进「从需求到 PR」的完整流程：issue-w
 3. **严格按序推进**：上一阶段产物齐备且对应 Skill 的门禁已通过，才进入下一阶段；不得跳阶段、不得并行推进两个阶段。
 4. **阶段内只调一个 Skill**：调用该阶段 Skill 并把用户已确认的信息原文传给它，不自行改写需求、文档或测试期望。
 5. **沿用各 Skill 既有门禁**：遇到设计终稿确认、真实部署黑盒测试审核等 Skill 内定义的人工确认点，停下来问人，不代替用户决策。
-6. **失败回流**：按 `docs/项目架构.md` 判定，设计错误回到阶段 B/C（`dev-doc-writer`）；非设计错误（边界条件、参数校验、状态判断疏漏）回到阶段 E（`implementer`）；测试流程文档与实现不一致回到阶段 F（`test-planner`）。回流后从对应阶段重新按序推进。
+6. **失败回流**：按 `docs/project-architecture.md` 判定，设计错误回到阶段 B/C（`dev-doc-writer`）；非设计错误（边界条件、参数校验、状态判断疏漏）回到阶段 E（`implementer`）；测试流程文档与实现不一致回到阶段 F（`test-planner`）。回流后从对应阶段重新按序推进。
 7. **产物校验**：每个阶段收尾用该 Skill 的 `evals/` 脚本校验产物位置，例如 `python skills/issue-writer/evals/verify_artifacts.py docs/dev-docs/12`；校验不通过先修产物，不得带着缺失进入下一阶段。
 8. **不越权**：不自行新增需求、不自行重构、不跳过测试、不虚构测试结果；信息缺失时向用户提问，而不是假设。
 9. **阶段续跑参数**：`-devId` 必填并校验 `docs/dev-docs/<devId>/` 与 `docs/dev-docs/<devId>/dev-context.md`；`-stage` 与 `-reStage` 互斥；`-reStage` 仅允许 `dev-doc` / `implement` / `test-plan`，且执行前必须读取失败报告目录；续跑不再询问需求。
