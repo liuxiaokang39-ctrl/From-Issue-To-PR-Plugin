@@ -8,8 +8,8 @@
         [--docs-root <模块文档根目录>]
 
 非校验模式输出到 -o 目录：facts.md（事实包）、skeleton.md（固定格式骨架）、
-未确认字段清单.md（无法从输入证实的字段）；同时按模块生成
-<docs-root>/<模块名>/ 下的 4 个文件（公有接口.md、公有函数.md、私有函数.md、数据结构.md），
+unconfirmed-fields.md（无法从输入证实的字段）；同时按模块生成
+<docs-root>/<模块名>/ 下的 4 个文件（public-interface.md、public-functions.md、private-functions.md、data-structures.md），
 分别收录公有接口、公有函数、私有函数与数据结构，并标注各自定义位置。
 校验模式打印覆盖率报告并以非零状态码表示存在缺失章节、残留「未确认」占位、
 rustdoc JSON 已过期或模块文档缺失覆盖。
@@ -36,10 +36,10 @@ SECTION_RE = re.compile(
 UNRESOLVED = "<未解析"
 
 MODULE_DOC_FILES = {
-    "interfaces": "公有接口.md",
-    "public_functions": "公有函数.md",
-    "internal_functions": "私有函数.md",
-    "data_structures": "数据结构.md",
+    "interfaces": "public-interface.md",
+    "public_functions": "public-functions.md",
+    "internal_functions": "private-functions.md",
+    "data_structures": "data-structures.md",
 }
 MODULE_DOC_TITLES = {
     "interfaces": "公有接口",
@@ -1334,7 +1334,7 @@ def write_outputs(
     out_dir.mkdir(parents=True, exist_ok=True)
     facts_path = out_dir / "facts.md"
     skeleton_path = out_dir / "skeleton.md"
-    gaps_path = out_dir / "未确认字段清单.md"
+    gaps_path = out_dir / "unconfirmed-fields.md"
     facts_path.write_text(render_facts(functions, gaps), encoding="utf-8")
     skeleton_path.write_text(render_skeleton(functions), encoding="utf-8")
     gaps_path.write_text(render_gap_report(gaps), encoding="utf-8")

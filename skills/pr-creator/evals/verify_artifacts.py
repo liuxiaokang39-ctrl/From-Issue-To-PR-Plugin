@@ -8,7 +8,8 @@
     python evals/verify_artifacts.py docs/dev-docs/001
 
 开发序号目录即 docs/dev-docs/<开发序号>。约定产物为
-`<仓库名>-<PR编号>-PR.md`，须存在于该目录下且内容非空。
+`<repo>-<pr>-pr.md`（`<repo>` 为仓库名的英文 kebab-case，`<pr>` 为 PR 编号），
+须存在于该目录下且内容非空。
 
 退出码：全部通过为 0；有缺失或内容为空为 1；参数错误为 2。
 """
@@ -19,7 +20,7 @@ import re
 import sys
 from pathlib import Path
 
-_PR_RE = re.compile(r"^.+-\d+-PR\.md$")
+_PR_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*-\d+-pr\.md$")
 
 
 def _is_non_empty(path: Path) -> bool:
@@ -48,7 +49,7 @@ def main(argv: list[str]) -> int:
         path for path in root.iterdir() if path.is_file() and _PR_RE.match(path.name)
     )
     if not candidates:
-        print("  ✗ 未找到 PR 本地副本：<仓库名>-<PR编号>-PR.md")
+        print("  ✗ 未找到 PR 本地副本：<repo>-<pr>-pr.md")
         failures += 1
     else:
         for path in candidates:

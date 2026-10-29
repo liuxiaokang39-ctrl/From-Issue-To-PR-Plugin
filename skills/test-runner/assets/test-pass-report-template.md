@@ -1,14 +1,14 @@
 # 测试通过报告样板
 
 > 样板草稿：生成实际文档时替换 `<...>` 占位符，删除本说明。报告内容必须来自实际执行记录，不得虚构、推测或复用旧结果。
-> 存放位置：`docs/dev-docs/<开发序号>/test-report/测试报告.md`。
+> 存放位置：`docs/dev-docs/<开发序号>/test-report/test-report.md`。
 
 ## 1. 测试基本信息
 
 | 项 | 内容 |
 | --- | --- |
 | 测试流程序号 | `<开发文档序号>` |
-| 流程文档 | `1-单元白盒测试流程.md`、`2-集成白盒测试流程.md`、`3-真实部署黑盒测试流程.md` |
+| 流程文档 | `1-unit-whitebox-test-process.md`、`2-integration-whitebox-test-process.md`、`3-real-deployment-blackbox-test-process.md` |
 | 执行时间 | `<开始时间 ~ 结束时间>` |
 | 执行环境 | `<操作系统、运行时 / 编译器及版本、依赖版本>` |
 | 真实部署黑盒人类审核结论 | `<已确认 / 不适用>` |

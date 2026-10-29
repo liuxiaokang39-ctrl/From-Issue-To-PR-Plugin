@@ -9,6 +9,6 @@ argument-hint: "[需求描述]"
 - 按 `skills/issue-writer/SKILL.md` 的提问规则执行需求确认：先确认本期做什么 / 不做什么，再逐项确认具体需求、期望行为与期望结果，最后请用户确认 Issue 正文
 - 确认后用 `gh issue create` 创建远端 Issue，取得 Issue 链接与编号
 - 创建成功后立即结束；本命令显式覆盖该 Skill 中「调用 spec-manager 分配开发信息」与「按开发序号本地留档」两步
-- 禁止：调用 `spec-manager`；分配或确认开发序号；创建 / 切换分支或 worktree；写入 `docs/dev-docs/`；生成 Issue 本地留档
+- 禁止：调用 `spec-manager`；分配或确认开发序号；创建 / 切换分支；写入 `docs/dev-docs/`；生成 Issue 本地留档
 - 产物：远端 Issue 链接 + 用户确认的需求清单
 - 结束提示固定为：「可新开对话发送 `/prompts:fitp-workflow <Issue链接>` 续接全流程」

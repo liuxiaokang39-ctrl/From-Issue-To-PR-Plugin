@@ -11,10 +11,10 @@
 | --- | --- |
 | 根目录 | `docs/data-struct-and-interface/` |
 | 模块目录 | Rust 模块路径去掉 crate 根：`crate::foo::bar` → `foo/bar`；crate 根 → `crate` |
-| 公有接口文件 | `公有接口.md` |
-| 公有函数文件 | `公有函数.md` |
-| 私有函数文件 | `私有函数.md` |
-| 数据结构文件 | `数据结构.md` |
+| 公有接口文件 | `public-interface.md` |
+| 公有函数文件 | `public-functions.md` |
+| 私有函数文件 | `private-functions.md` |
+| 数据结构文件 | `data-structures.md` |
 | 提交 | 模块文档属于项目文档，必须随代码提交 |
 
 ## 固定格式

@@ -13,16 +13,16 @@ metadata:
 
 ## 适用场景
 
-- 适用：Rust 项目测试通过后，需要按当前代码更新公有接口的源码 `///` 文档、按模块生成或更新 `docs/data-struct-and-interface/<模块名>/` 下的 `公有接口.md`、`公有函数.md`、`私有函数.md`、`数据结构.md`，并校验文档覆盖率；用户提到「文档同步」「更新接口文档」「生成数据结构文档」「未确认字段清单」等说法。
+- 适用：Rust 项目测试通过后，需要按当前代码更新公有接口的源码 `///` 文档、按模块生成或更新 `docs/data-struct-and-interface/<模块名>/` 下的 `public-interface.md`、`public-functions.md`、`private-functions.md`、`data-structures.md`，并校验文档覆盖率；用户提到「文档同步」「更新接口文档」「生成数据结构文档」「未确认字段清单」等说法。
 - 不适用：非 Rust 项目；代码尚未经 `test-runner` 验证通过（回到 `test-runner`）；开发文档与流程图（由 `dev-doc-writer` 负责）；PR 提交（由 `pr-creator` 负责）；只需浏览 API 而不写文档。
 
 ## 必要前提
 
-1. **待同步代码已通过测试**：`docs/dev-docs/<开发序号>/test-report/测试报告.md` 存在且记录全部场景通过。不满足时中断，回到 `test-runner` 阶段（`NOT_VERIFIED`）。
+1. **待同步代码已通过测试**：`docs/dev-docs/<开发序号>/test-report/test-report.md` 存在且记录全部场景通过。不满足时中断，回到 `test-runner` 阶段（`NOT_VERIFIED`）。
 2. **待同步范围可确定**：crate 名、`Cargo.toml` 路径、源码根（默认 `src`）与 crate 根文件（默认 `src/lib.rs`）可判定，且与 `Cargo.toml` 一致。无法确定时中断，使用 `AskUserQuestion` 向人类确认后再执行（`PARAM_UNKNOWN`）。
 3. **工具链与依赖可用**：`rustup` 与 nightly 工具链、`rust-script`、Python 3.12+、`rustdoc-json-to-markdown` 或 `rustdoc-llms`、`bash` 均已安装且可执行。缺失时先自行安装补齐并重试原步骤；确实无法安装时中断该项，说明缺失项、安装命令与受影响的步骤（`RESOURCE_UNAVAILABLE`）。
 4. **目标目录可读写**：待同步源码文件与 `docs/data-struct-and-interface/` 可写，`target/rust-fn-doc/` 可创建。不可写时中断并提示人类检查目录与权限（`WRITE_FAILED`）。
-5. **开发序号已登记**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/开发上下文.md` 的登记值，且与测试报告所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号（`CONTEXT_MISSING`）。
+5. **开发序号已登记**：`<开发序号>` 取自 `docs/dev-docs/<开发序号>/dev-context.md` 的登记值，且与测试报告所在目录一致。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐，不自行编号或向人类另行确认序号（`CONTEXT_MISSING`）。
 6. **crate 可构建**：目标 crate 在其 `Cargo.toml` 下可编译（rustdoc JSON 生成依赖构建成功）。构建失败时中断本阶段并告知人类（`EXTRACT_FAILED`）。
 7. **当前分支为登记分支**：执行前用 `git branch --show-current` 检查当前分支是否为登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
 
@@ -40,7 +40,7 @@ metadata:
 | 载体 | 内容范围 | 更新范围 |
 | --- | --- | --- |
 | 源码 `///` | 公有接口的对外契约：职责、参数、返回值、错误、示例 | **只更新公有接口**；私有函数、数据结构的注释一律不新增、不修改 |
-| `docs/data-struct-and-interface/<模块名>/` 下的 4 个文件 | `公有接口.md`（公有接口）、`公有函数.md`（公有函数）、`私有函数.md`（私有函数）、`数据结构.md`（结构体、枚举、联合体、类型别名等）；每条记录标注定义位置 | 每次同步按当前代码整体生成 |
+| `docs/data-struct-and-interface/<模块名>/` 下的 4 个文件 | `public-interface.md`（公有接口）、`public-functions.md`（公有函数）、`private-functions.md`（私有函数）、`data-structures.md`（结构体、枚举、联合体、类型别名等）；每条记录标注定义位置 | 每次同步按当前代码整体生成 |
 
 - 必须：只同步经 `test-runner` 测试通过的代码；未验证的实现不回写项目文档。
 - 必须：公有接口的函数签名、可见性、参数与返回值类型、doc 注释只以 rustdoc JSON 为准；AST 只用于补全 rustdoc 无法表达的事实（函数体结构、错误分支、调用关系、私有函数与数据结构）。
@@ -54,8 +54,8 @@ metadata:
 - 必须：无法从 rustdoc JSON 或 AST 证实的内容一律登记到未确认字段清单，字段为：函数 | 字段 | 原因 | 需人类确认的内容 | 位置。典型来源包括参数含义缺失、返回值语义未说明、返回 `Result` 但无 `# Errors`、`# Examples` 缺失或无法验证、rustdoc JSON 与 AST 不一致、类型渲染失败（复杂泛型、`impl Trait` 等）。清单默认只在汇报中给出，不写入项目文档；人类要求留档时再写入指定位置。
 - 禁止：不臆造——不得推断或编造参数含义、错误码、返回值语义、示例运行结果；不得把「未确认」写成确定事实。
 - 禁止：修改代码逻辑、签名、可见性、测试，或修改开发文档与流程图。
-- 必须：开发规范（`docs/开发规范/`）只读；开发序号、分支名、worktree 路径与工作区一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行。
-- 禁止：创建 / 重命名 / 删除开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
+- 必须：开发规范（`docs/dev-standards/`）只读；开发序号、分支名、项目根目录与工作区一律取自 `docs/dev-docs/<开发序号>/dev-context.md`，只按登记值执行，执行前在项目根目录内按登记分支名自检并切换。
+- 禁止：创建 / 重命名 / 删除开发分支，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断。
 - 必须：凡需要向人类提问或确认的环节（crate 与路径参数、未确认字段清单、失败处理去向等），一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；人类可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
 - 禁止：在源码中残留 `<!-- 未确认：... -->` 占位标记；定稿前必须确认或删除该表述。
 - 只能修改：公有接口（公有函数、公有 trait 方法）的 `///` 注释，以及受本次改动影响的项目说明（如 `README.md` 中的相关描述）。
@@ -130,7 +130,7 @@ python3 scripts/generate_fn_docs.py \
 | --- | --- |
 | `facts.md` | 逐函数的事实包：签名、可见性、参数类型、返回值、doc 原文、错误分支、调用关系 |
 | `skeleton.md` | 固定格式的 `///` 骨架，缺失事实处预置 `<!-- 未确认：... -->` |
-| `未确认字段清单.md` | 无法从输入证实、需要人类确认的字段列表 |
+| `unconfirmed-fields.md` | 无法从输入证实、需要人类确认的字段列表 |
 
 **参考文件**：本 Skill 附带 `assets/fn_doc.md`（固定格式、章节规则与未确认标注约定）。此处仅**显式声明其存在**；**仅在本步骤才读取该文件内容**，其余阶段不展开其正文。
 
@@ -158,10 +158,10 @@ python3 scripts/generate_fn_docs.py \
 ```
 
 - 产物：`docs/data-struct-and-interface/<模块名>/` 下固定 4 个文件，分别收录：
-  - `公有接口.md`：公有 trait 及其方法；
-  - `公有函数.md`：公有函数的签名、入参、返回值；
-  - `私有函数.md`：私有函数（含 `pub(crate)` 等非公有函数，以及未进入公有 API 的 `pub` 函数）的签名、入参、返回值；
-  - `数据结构.md`：结构体、枚举、联合体、类型别名等，含字段 / 变体与可见性。
+  - `public-interface.md`：公有 trait 及其方法；
+  - `public-functions.md`：公有函数的签名、入参、返回值；
+  - `private-functions.md`：私有函数（含 `pub(crate)` 等非公有函数，以及未进入公有 API 的 `pub` 函数）的签名、入参、返回值；
+  - `data-structures.md`：结构体、枚举、联合体、类型别名等，含字段 / 变体与可见性。
 - 每条记录必须标注定义位置（`文件路径:行号`）：公有接口与公有函数取自 rustdoc JSON 的 span，私有函数与数据结构取自 AST 的 `file` / `line`。
 - 事实来源：公有接口与公有函数取自 rustdoc JSON（权威），私有函数与数据结构取自 AST；不得据此推断语义，无法证实的说明留「—」并登记到未确认字段清单。
 - crate 根模块写入 `crate/`；`crate::foo::bar` 写入 `foo/bar/`，两者都包含上述 4 个文件。
@@ -181,7 +181,7 @@ python3 scripts/generate_fn_docs.py \
 - 返回 `Result` 时存在 `# Errors`；
 - 源码 doc 与 rustdoc JSON 的 `docs` 一致（不一致说明 JSON 已过期，必须回到第 1 / 5 步重新生成）；
 - 源码中不残留「未确认」占位标记；
-- 每个模块目录都存在且固定包含 `公有接口.md`、`公有函数.md`、`私有函数.md`、`数据结构.md`，并分别覆盖该模块的公有接口、公有函数、私有函数与数据结构；每条记录都带定义位置；
+- 每个模块目录都存在且固定包含 `public-interface.md`、`public-functions.md`、`private-functions.md`、`data-structures.md`，并分别覆盖该模块的公有接口、公有函数、私有函数与数据结构；每条记录都带定义位置；
 - `# Examples` 缺失按警告提示，不计为失败。
 
 **校验脚本**：本 Skill 附带 `evals/verify_doc_coverage.sh`（覆盖率与一致性校验入口，内部调用 `generate_fn_docs.py --verify`）。此处仅**显式声明其存在**；**仅在本步骤**调用：
@@ -211,7 +211,7 @@ bash evals/verify_doc_coverage.sh \
 ```text
 project_doc_sync(
   crate名: string,                 // 必填：待同步的 crate 名，须与 Cargo.toml 中的包名一致
-  开发序号: string,                // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的登记值，用于确认测试已通过
+  开发序号: string,                // 必填：取自 docs/dev-docs/<开发序号>/dev-context.md 的登记值，用于确认测试已通过
   manifest路径: string,            // 必填：Cargo.toml 路径，工作区多包时必须显式指定
   源码根: string,                  // 可选：默认 src
   crate根文件: string,             // 可选：默认 src/lib.rs
@@ -234,8 +234,8 @@ SkillError {
 输出产物：
 
 1. 就地更新的源码 `///` 文档注释：仅公有接口，不新建 API 文档副本；
-2. `docs/data-struct-and-interface/<模块名>/` 下的 `公有接口.md`、`公有函数.md`、`私有函数.md`、`数据结构.md`：按分类保存公有接口、公有函数、私有函数的出入参与数据结构信息，每条记录标注定义位置（提交到项目）；
-3. `target/rust-fn-doc/` 下的 `<crate名>.json`、`ast.json`、`skeleton-from-rustdoc.md`、`facts.md`、`skeleton.md`、`未确认字段清单.md`：工作区临时产物，不提交；
+2. `docs/data-struct-and-interface/<模块名>/` 下的 `public-interface.md`、`public-functions.md`、`private-functions.md`、`data-structures.md`：按分类保存公有接口、公有函数、私有函数的出入参与数据结构信息，每条记录标注定义位置（提交到项目）；
+3. `target/rust-fn-doc/` 下的 `<crate名>.json`、`ast.json`、`skeleton-from-rustdoc.md`、`facts.md`、`skeleton.md`、`unconfirmed-fields.md`：工作区临时产物，不提交；
 4. 未确认字段清单：默认在汇报中给出，人类要求留档时才写入指定位置。
 
 状态取值：
@@ -248,12 +248,12 @@ SkillError {
 
 | 失败场景 | 判定条件 | 处理动作 |
 | --- | --- | --- |
-| 待同步代码未通过测试 | `test-report/测试报告.md` 缺失，或记录中存在失败 / 未执行场景 | 中断，不同步；回到 `test-runner` 阶段（`NOT_VERIFIED`） |
+| 待同步代码未通过测试 | `test-report/test-report.md` 缺失，或记录中存在失败 / 未执行场景 | 中断，不同步；回到 `test-runner` 阶段（`NOT_VERIFIED`） |
 | 待同步范围无法确定 | crate 名、`Cargo.toml` 路径、源码根或 crate 根文件无法判定，或与 `Cargo.toml` 不一致 | 中断；使用 `AskUserQuestion` 向人类确认后再执行（`PARAM_UNKNOWN`） |
 | 依赖缺失 | `rustup`、nightly、`rust-script`、Python 3.12+、`rustdoc-json-to-markdown` / `rustdoc-llms` 或 `bash` 不可用 | 先安装补齐并重试原步骤；安装失败时中断该项，保留原始报错并给出安装命令与受影响步骤（`RESOURCE_UNAVAILABLE`） |
 | rustdoc JSON 生成失败 | 脚本非零退出，且报错为编译错误或目标 crate 不可构建 | 中断本阶段并告知人类；不得改用 AST 签名冒充可信底座（`EXTRACT_FAILED`） |
 | rustdoc JSON 已过期 | 源码 doc 与 JSON 的 `docs` 不一致，或更换 nightly 工具链后未重新生成 | 停止合成；回到第 1 / 5 步重新生成 JSON 与 AST（`STALE_JSON`） |
-| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的开发序号与测试报告所在目录不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/dev-context.md` 不存在，或登记的开发序号与测试报告所在目录不一致 | 中断；回到 `spec-manager` 补齐登记文件后再执行（`CONTEXT_MISSING`） |
 | 当前分支不是登记分支 | `git branch --show-current` 与登记「分支名」不一致，且切换失败 | 中断并保留原始报错；提示人类检查分支状态后重试，禁止自行创建分支（`BRANCH_MISMATCH`） |
 | 事实来源冲突 | 骨架与 JSON 不一致，或 rustdoc JSON 与 AST 的签名 / doc 不一致 | 以 rustdoc JSON 为准并重新提取；无法消解时中断并登记未确认字段（`FACT_CONFLICT`） |
 | 存在无法证实的内容 | 事实包或模块文档出现「未确认」占位，或某字段无任何依据 | 登记到未确认字段清单；定稿前必须确认或删除该表述，不得把占位留在源码（`UNCONFIRMED_FACT`） |
@@ -276,7 +276,7 @@ crate根文件：src/lib.rs
 模块名：null
 ```
 
-关键步骤：确认 `docs/dev-docs/001/test-report/测试报告.md` 全部场景通过 → 生成 `target/rust-fn-doc/orders.json` 并记录 `format_version` → 生成可读骨架 → 运行 `scripts/ast_inspect.rs` 得到 `ast.json` → 合并事实包，按 `assets/fn_doc.md` 定稿公有接口 `///` 且无未确认占位 → 重新生成 JSON 与 AST，产出 `docs/data-struct-and-interface/service/` 下 4 个文件（每条带定义位置）→ 校验脚本退出码 0 → 汇报。
+关键步骤：确认 `docs/dev-docs/001/test-report/test-report.md` 全部场景通过 → 生成 `target/rust-fn-doc/orders.json` 并记录 `format_version` → 生成可读骨架 → 运行 `scripts/ast_inspect.rs` 得到 `ast.json` → 合并事实包，按 `assets/fn_doc.md` 定稿公有接口 `///` 且无未确认占位 → 重新生成 JSON 与 AST，产出 `docs/data-struct-and-interface/service/` 下 4 个文件（每条带定义位置）→ 校验脚本退出码 0 → 汇报。
 
 输出：
 
@@ -284,10 +284,10 @@ crate根文件：src/lib.rs
 status: success
 artifacts: [
   "src/service.rs",
-  "docs/data-struct-and-interface/service/公有接口.md",
-  "docs/data-struct-and-interface/service/公有函数.md",
-  "docs/data-struct-and-interface/service/私有函数.md",
-  "docs/data-struct-and-interface/service/数据结构.md"
+  "docs/data-struct-and-interface/service/public-interface.md",
+  "docs/data-struct-and-interface/service/public-functions.md",
+  "docs/data-struct-and-interface/service/private-functions.md",
+  "docs/data-struct-and-interface/service/data-structures.md"
 ]
 errors: []
 ```
@@ -313,10 +313,10 @@ crate根文件：src/lib.rs
 status: partial
 artifacts: [
   "src/refund.rs",
-  "docs/data-struct-and-interface/refund/公有函数.md",
-  "docs/data-struct-and-interface/refund/私有函数.md",
-  "docs/data-struct-and-interface/refund/数据结构.md",
-  "docs/data-struct-and-interface/refund/公有接口.md"
+  "docs/data-struct-and-interface/refund/public-functions.md",
+  "docs/data-struct-and-interface/refund/private-functions.md",
+  "docs/data-struct-and-interface/refund/data-structures.md",
+  "docs/data-struct-and-interface/refund/public-interface.md"
 ]
 errors: [
   { code: "UNCONFIRMED_FACT", message: "refund 的 reason 参数含义无依据，已列入未确认字段清单", recoverable: true }

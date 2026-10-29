@@ -7,7 +7,7 @@
 
 - 本模板只用于源码 `///` 注释，且只用于公有接口（公有函数、公有 trait 方法）。
 - 私有函数、数据结构（结构体、枚举、联合体、类型别名等）不写源码注释：私有函数记录在
-  `docs/data-struct-and-interface/<模块名>/私有函数.md`，数据结构记录在 `数据结构.md`；公有函数另汇总在 `公有函数.md`。格式见 `assets/module_interface_doc.md`。
+  `docs/data-struct-and-interface/<模块名>/private-functions.md`，数据结构记录在 `data-structures.md`；公有函数另汇总在 `public-functions.md`。格式见 `assets/module_interface_doc.md`。
 
 ## 固定格式
 

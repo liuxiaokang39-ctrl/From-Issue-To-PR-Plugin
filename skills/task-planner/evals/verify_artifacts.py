@@ -11,12 +11,12 @@
 校验项：
 
 1. `task-list/` 存在，且至少有一个任务文件；
-2. 任务文件名为 `<编号>-<任务标题>.md`；
+2. 任务文件名为 `<seq>-<task-title>.md`，任务标题为英文 kebab-case（全小写、不含中文）；
 3. 每个任务文件最开头是合法 JSON 头：`编号` 为非空字符串且与文件名前缀一致，
    `依赖` 为字符串数组（无依赖填 `[]`），依赖指向存在的任务，且无自依赖与循环依赖；
-4. `执行顺序.md` 存在，覆盖全部任务，且顺序满足依赖的先后关系；
+4. `execution-order.md` 存在，覆盖全部任务，且顺序满足依赖的先后关系；
 5. 每个任务文件的 `工作区` 按「名称（读写 / 只读）——目录」填写，名称与类型
-   均来自同目录 `开发上下文.md` 的工作区表格。
+   均来自同目录 `dev-context.md` 的工作区表格。
 
 退出码：全部通过为 0；有缺失或不符合约定为 1；参数错误为 2。
 """
@@ -29,7 +29,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-_ORDER_NAME = "执行顺序.md"
+_ORDER_NAME = "execution-order.md"
+_TASK_TITLE_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _JSON_FENCE_RE = re.compile(
     r"^```(?:json)?[ \t]*\r?\n(.*?)\r?\n```[ \t]*(?:\r?\n|$)",
     re.DOTALL | re.IGNORECASE,
@@ -93,13 +94,16 @@ def _parse_header(text: str) -> tuple[dict[str, Any] | None, str | None]:
 
 def _validate_filename(name: str) -> list[str]:
     if "-" not in name:
-        return ["文件名不符合 `<编号>-<任务标题>.md`"]
+        return ["文件名不符合 `<seq>-<task-title>.md`"]
     number, rest = name.split("-", 1)
     problems: list[str] = []
     if not number.strip():
         problems.append("文件名缺少编号")
-    if not rest[:-3].strip():
+    title = rest[:-3] if rest.endswith(".md") else rest
+    if not title.strip():
         problems.append("文件名缺少任务标题")
+    elif not _TASK_TITLE_RE.match(title):
+        problems.append("任务标题须为英文 kebab-case（全小写、不含中文）")
     return problems
 
 
@@ -234,7 +238,7 @@ def main(argv: list[str]) -> int:
         return 1
     print(f"  ✓ 任务目录：{task_dir}")
 
-    registry_path = root / "开发上下文.md"
+    registry_path = root / "dev-context.md"
     registry = _workspace_registry(registry_path)
     if not registry_path.is_file():
         print(f"  ✗ 缺少开发上下文登记文件：{registry_path}")

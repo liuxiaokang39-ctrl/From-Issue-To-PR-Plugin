@@ -5,9 +5,9 @@
     python topo_sort.py <任务目录或任务文件> [-o 输出文件]
 
 示例：
-    python topo_sort.py docs/dev-docs/001/task-list -o docs/dev-docs/001/task-list/执行顺序.md
+    python topo_sort.py docs/dev-docs/001/task-list -o docs/dev-docs/001/task-list/execution-order.md
 
-输入为任务目录（扫描其中除「执行顺序.md」外的所有 .md 任务文件），
+输入为任务目录（扫描其中除「execution-order.md」外的所有 .md 任务文件），
 或单个任务文件。每个任务文件的最开头须为 JSON 头：
 
     {
@@ -35,7 +35,7 @@ _KEY = r"^\s*(?:[-*+]\s+)?(?:\*\*|`)?{key}(?:\*\*|`)?\s*[:：]\s*(.+?)\s*$"
 _TITLE_RE = re.compile(_KEY.format(key="(?:任务|标题|title)"), re.IGNORECASE)
 _HEADING_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 _JSON_FENCE_RE = re.compile(r"^```(?:json)?[ \t]*\r?\n(.*?)\r?\n```[ \t]*(?:\r?\n|$)", re.DOTALL | re.IGNORECASE)
-_ORDER_FILENAME = "执行顺序.md"
+_ORDER_FILENAME = "execution-order.md"
 _ID_KEYS = ("编号", "id", "number")
 _DEP_KEYS = ("依赖", "depends_on", "depends", "dependencies")
 

@@ -1,6 +1,6 @@
 ---
 name: pr-creator
-description: 提交 PR 阶段：明确待合并分支，fork 仓库先同步上游 main，把待合并分支合入 main 后以草稿 PR 触发 CI，按 CI 报错最小修复至全部通过，再按 GitHub 社区规范提交标题与正文取自 docs 对应序号文件的 PR。当用户要求提交 PR、创建草稿 PR、修复 CI 报错、同步 fork 上游 main，或提到「提交 PR」「创建 PR」「开 PR」「CI 修复」「草稿 PR」「同步上游」等说法时使用；典型输入为 docs/dev-docs/<开发序号>/ 下的开发文档、Issue、测试报告，以及待合并分支与 PR 所在仓库。
+description: 提交 PR 阶段：明确待合并分支，fork 仓库先同步上游 main，把待合并分支合入 main 后以草稿 PR 触发 CI，按 CI 报错最小修复至全部通过，再按 GitHub 社区规范提交标题与正文取自 docs 对应序号文件的 PR。当用户要求提交 PR、创建草稿 PR、修复 CI 报错、同步 fork 上游 main，或提到「提交 PR」「创建 PR」「开 PR」「CI 修复」「草稿 PR」「同步上游」等说法时使用；典型输入为 docs/dev-docs/<开发序号>/ 下的 `<title>-dev-doc.md`、Issue 留档、test-report/test-report.md，以及待合并分支与 PR 所在仓库。
 compatibility: python3.12+；依赖 git 与 gh CLI（GitHub CLI），执行时 git 与 gh 须可用且 gh auth status 已登录认证，并具备创建 PR、查看 CI 检查的权限。
 metadata:
   author: XK_XK
@@ -18,20 +18,20 @@ metadata:
 
 ## 必要前提
 
-1. **待合并分支与开发信息已登记**：分支名、worktree 路径与开发序号取自 `docs/dev-docs/<开发序号>/开发上下文.md`；Issue 编号与 PR 所在仓库名取自同目录的 Issue 留档与分支名。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）；Issue 编号或仓库名无法确定时使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测。执行前用 `git branch --show-current` 检查当前分支是否为登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
+1. **待合并分支与开发信息已登记**：分支名、项目根目录与开发序号取自 `docs/dev-docs/<开发序号>/dev-context.md`；Issue 编号与 PR 所在仓库名取自同目录的 Issue 留档与分支名。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）；Issue 编号或仓库名无法确定时使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测。执行前在项目根目录内用 `git branch --show-current` 检查当前分支是否为登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
 2. **远端仓库类型可判断**：`git remote -v` 与 `gh repo view --json isFork,parent` 能确认当前远端是主仓库还是 fork 仓库。无法判断时中断，使用 `AskUserQuestion` 向人类确认，不自行执行同步（`REPO_UNKNOWN`）。
-3. **工作区干净**：`git status` 显示无未提交改动。存在未提交改动时中断，使用 `AskUserQuestion` 向人类确认处理方式，不强行切换分支或丢弃改动（`WORKTREE_DIRTY`）。
+3. **工作区干净**：`git status` 显示无未提交改动。存在未提交改动时中断，使用 `AskUserQuestion` 向人类确认处理方式，不强行切换分支或丢弃改动（`WORKSPACE_DIRTY`）。
 4. **git 与 gh 可用**：`git status` 与 `gh auth status` 均能成功执行，当前仓库存在 `main` 分支。不满足时中断并保留原始报错，提示人类配置 git / gh 后重试（`GIT_UNAVAILABLE`）。
 
 ## 执行约束
 
 - 必须：CI 全部通过才算提交完成——PR 先以草稿形式创建以触发 CI，所有 CI 检查实际通过后，才可标记为可评审并请求合并。
 - 必须：奥卡姆剃刀——只修改 CI 报错明确指出的错误，不做报错之外的任何改动、重构或「顺手改进」。
-- 必须：若修复必然改动代码的执行逻辑，改动后的行为须与 `docs/dev-docs/<开发序号>/<标题>流程图.md` 的描述一致；与流程图冲突时立即停止提交，向人类说明冲突点与原因并等待决定。
+- 必须：若修复必然改动代码的执行逻辑，改动后的行为须与 `docs/dev-docs/<开发序号>/<title>-flowchart.md` 的描述一致；与流程图冲突时立即停止提交，向人类说明冲突点与原因并等待决定。
 - 必须：PR 标题与正文的语言须先用 `AskUserQuestion` 向人类确认（选项至少包含「中文」「英文」，用户可通过「Other」指定其他语言），并按确认的语言撰写；未确认语言时不得创建 PR。
-- 必须：分支名、开发序号与 worktree 路径一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行；仓库类型、PR 的目标仓库、PR 标题与正文来源无法判断或缺失时，先用 `AskUserQuestion` 向人类确认，再继续。
-- 必须：开发规范（`docs/开发规范/`）只读。
-- 禁止：创建 / 重命名 / 删除开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断；合并所需的 `main` 操作按第 2、3 步流程进行。
+- 必须：分支名、开发序号与项目根目录一律取自 `docs/dev-docs/<开发序号>/dev-context.md`，只按登记值执行；仓库类型、PR 的目标仓库、PR 标题与正文来源无法判断或缺失时，先用 `AskUserQuestion` 向人类确认，再继续。
+- 必须：开发规范（`docs/dev-standards/`）只读。
+- 禁止：创建 / 重命名 / 删除开发分支，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断；合并所需的 `main` 操作按第 2、3 步流程进行。
 - 必须：凡需要向人类提问或确认的环节（仓库类型、PR 语言、未提交改动处理、合并冲突、失败处理去向等），一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；人类可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
 - 禁止：CI 未全部通过时转为可评审、请求合并，或以 `--admin` 等方式强制合并。
 - 禁止：跳过、禁用、忽略 CI 检查，或虚构 CI 结果。
@@ -40,7 +40,7 @@ metadata:
 - 禁止：凭提交记录猜测分支名、仓库类型、开发序号或 Issue 编号。
 - 禁止：在 PR 标题与正文中引入 docs 之外的信息，或写入未确认的内容。
 - 只能修改：CI 报错指向的代码；合并、同步、推送仅按第 2、3 步的流程执行。
-- 只能写入：`docs/dev-docs/<开发序号>/` 下的本地 PR 副本 `<仓库名>-<PR编号>-PR.md`。除远端 PR 与该副本外，不新增文件或目录；`--body-file` 的临时文件须放在仓库之外并在 PR 创建后删除。
+- 只能写入：`docs/dev-docs/<开发序号>/` 下的本地 PR 副本 `<repo>-<pr>-pr.md`。除远端 PR 与该副本外，不新增文件或目录；`--body-file` 的临时文件须放在仓库之外并在 PR 创建后删除。
 
 **参考文件**：本 Skill 附带下列文件，此处仅**显式声明其存在**，不展开其正文：
 
@@ -52,7 +52,7 @@ metadata:
 
 ### 1. 明确本次需要合并的分支
 
-- 从 `docs/dev-docs/<开发序号>/开发上下文.md` 读取开发序号、分支名与 worktree 路径；登记文件缺失时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）。
+- 从 `docs/dev-docs/<开发序号>/dev-context.md` 读取开发序号、分支名与项目根目录；登记文件缺失时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）。
 - 从同目录的 Issue 留档与分支名确定 Issue 编号与 PR 所在仓库名（用于第 5 步取 PR 标题与正文、第 6 步保存本地 PR 副本）；无法确定时使用 `AskUserQuestion` 向人类确认，禁止凭提交记录猜测。
 
 上述信息确认后，进入第 2 步。
@@ -97,10 +97,10 @@ metadata:
 
 PR 标题与正文一律取自 `docs/` 下对应序号的文件，并按已确认的语言撰写，不自行编造、不引入 docs 之外的信息：
 
-- **标题**：取自 `docs/dev-docs/<开发序号>/<标题>开发文档.md` 文件名中的 `<标题>`；
+- **标题**：取自 `docs/dev-docs/<开发序号>/<title>-dev-doc.md` 文件名中的 `<title>`（英文 kebab-case 短名）；
 - **背景**：取自 `docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md`；
 - **改动摘要**：取自开发文档中的数据结构与函数定义，并与实际 diff 对齐；
-- **验证方式**：取自 `docs/dev-docs/<开发序号>/test-report/测试报告.md` 中的实际执行命令与结果；
+- **验证方式**：取自 `docs/dev-docs/<开发序号>/test-report/test-report.md` 中的实际执行命令与结果；
 - **影响面**：取自开发文档声明的工作区与本次 diff 涉及的文件；
 - **回滚方案**：依据本次 diff 与开发文档的改动范围给出。
 
@@ -114,16 +114,16 @@ PR 标题、正文格式与创建命令遵循 GitHub 社区规范，标题与正
 
 用 `gh pr create --draft` 创建 PR 时按上述参考文件选定参数。使用 `--body-file` 时，临时文件放在仓库之外，PR 创建后删除，不在仓库内留下临时副本。
 
-PR 创建成功后，从返回的 PR URL 取得 `<PR编号>`，在 `docs/dev-docs/<开发序号>/` 下保存一份与远端 PR 同标题、同正文的本地副本，命名为 `<仓库名>-<PR编号>-PR.md`（仓库名取 PR 所在仓库名）。本地副本写入后，进入第 7 步。
+PR 创建成功后，从返回的 PR URL 取得 `<PR编号>`，在 `docs/dev-docs/<开发序号>/` 下保存一份与远端 PR 同标题、同正文的本地副本，命名为 `<repo>-<pr>-pr.md`（`<repo>` 取 PR 所在仓库名，`<pr>` 取 PR 编号，均为英文 kebab-case / 数字）。本地副本写入后，进入第 7 步。
 
 ### 7. 校验
 
 交付前逐项检查以下内容：
 
 - CI 全部检查已实际通过（`gh pr checks <PR编号>` 无失败、无待处理项），PR 已用 `gh pr ready <PR编号>` 转为可评审，且未使用 `--admin` 或跳过、禁用、忽略检查；
-- PR 标题取自 `docs/dev-docs/<开发序号>/<标题>开发文档.md` 的文件名，正文各段取自第 5 步声明的 docs 文件与真实 diff，未引入 docs 之外的信息；
+- PR 标题取自 `docs/dev-docs/<开发序号>/<title>-dev-doc.md` 的文件名，正文各段取自第 5 步声明的 docs 文件与真实 diff，未引入 docs 之外的信息；
 - PR 标题与正文的语言与第 5 步人类确认的语言一致；
-- 本地副本 `docs/dev-docs/<开发序号>/<仓库名>-<PR编号>-PR.md` 存在且内容非空，标题与正文与远端 PR 一致；
+- 本地副本 `docs/dev-docs/<开发序号>/<repo>-<pr>-pr.md` 存在且内容非空，标题与正文与远端 PR 一致；
 - 除远端 PR 与本地副本外未新增文件或目录，`--body-file` 临时文件已删除且位于仓库之外。
 
 **校验脚本**：本 Skill 附带 `evals/verify_artifacts.py`（校验 PR 本地副本的位置、命名与内容非空）。此处仅**显式声明其存在**；**仅在本步骤**调用该脚本：
@@ -138,7 +138,7 @@ python evals/verify_artifacts.py docs/dev-docs/<开发序号>
 
 ```text
 pr_creator(
-  待合并分支: string,                       // 必填：取自 docs/dev-docs/<开发序号>/开发上下文.md 的「分支名」
+  待合并分支: string,                       // 必填：取自 docs/dev-docs/<开发序号>/dev-context.md 的「分支名」
   开发序号: string,                         // 必填：取自同一登记文件的「开发序号」
   Issue编号: string,                        // 必填：用于取 PR 背景，取自同目录 Issue 留档
   PR仓库名: string,                         // 必填：PR 所在仓库名，用于本地副本命名，取自同目录 Issue 留档
@@ -162,23 +162,23 @@ SkillError {
 输出产物：
 
 1. **远端 PR**：以 `gh pr create --draft` 创建，地址取自命令返回的 PR URL；CI 全部通过后以 `gh pr ready` 转为可评审，本 Skill 只请求合并、不执行合并。
-2. **本地 PR 副本** `docs/dev-docs/<开发序号>/<仓库名>-<PR编号>-PR.md`：与远端 PR 同标题、同正文，内容非空。
+2. **本地 PR 副本** `docs/dev-docs/<开发序号>/<repo>-<pr>-pr.md`：与远端 PR 同标题、同正文，内容非空。
 
 ## 失败处理
 
 | 失败场景 | 判定条件 | 处理动作 |
 | --- | --- | --- |
-| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的分支名、开发序号、worktree 路径不一致 | 中断，不执行 git / gh 操作；回到 `spec-manager` 补齐登记文件后再继续（`CONTEXT_MISSING`） |
+| 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/dev-context.md` 不存在，或登记的分支名、开发序号、项目根目录不一致 | 中断，不执行 git / gh 操作；回到 `spec-manager` 补齐登记文件后再继续（`CONTEXT_MISSING`） |
 | 当前分支不是登记分支 | `git branch --show-current` 与登记「分支名」不一致，且切换失败 | 中断并保留原始报错；提示人类检查分支状态后重试，禁止自行创建分支（`BRANCH_MISMATCH`） |
 | 仓库信息缺失 | Issue 编号或 PR 所在仓库名无法从 docs 确定 | 中断；使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测（`INPUT_MISSING`） |
 | 远端仓库类型无法判断 | `git remote -v` 与 `gh repo view --json isFork,parent` 无法判定主仓库或 fork，或没有远端仓库 | 中断；使用 `AskUserQuestion` 向人类确认仓库类型后再继续，不自行执行同步（`REPO_UNKNOWN`） |
-| 工作区不干净 | `git status` 显示存在未提交改动 | 中断；使用 `AskUserQuestion` 向人类确认处理方式，禁止强行切换分支或丢弃改动（`WORKTREE_DIRTY`） |
+| 工作区不干净 | `git status` 显示存在未提交改动 | 中断；使用 `AskUserQuestion` 向人类确认处理方式，禁止强行切换分支或丢弃改动（`WORKSPACE_DIRTY`） |
 | git 或 gh 不可用 | `git status` 或 `gh auth status` 报错，或 `main` 分支不存在 | 中断并保留原始报错；提示人类配置 git / gh 后重试（`GIT_UNAVAILABLE`） |
 | 上游同步或推送失败 | `git fetch upstream`、合并 `upstream/main` 或 `git push origin main` 非零退出或产生冲突 | 暂停并保留原始报错；向人类报告，不擅自解决（`SYNC_FAILED`） |
 | 待合并分支合入冲突 | 将待合并分支合入 `main` 时产生冲突 | 暂停，报告冲突文件与冲突内容，由人类决定解决方式，禁止自行取舍（`MERGE_CONFLICT`） |
 | head 分支无法确定 | 远端即主仓库（非 fork），`main` 无法作为 head 向自身提交 PR | 中断；使用 `AskUserQuestion` 向人类确认改用哪个分支作为 head 后再提交（`HEAD_UNKNOWN`） |
 | CI 检查失败 | `gh pr checks <PR编号>` 存在失败的检查 | 按 `gh run view <run-id> --log-failed` 的报错原文最小修复并推送，重新等待 CI，直至全部检查通过（`CI_FAILED`） |
-| 修复与流程图冲突 | 修复必然改动执行逻辑，且改动后与 `docs/dev-docs/<开发序号>/<标题>流程图.md` 的描述冲突 | 立即停止提交；向人类说明冲突点与原因并等待决定，禁止修改流程图迁就代码，禁止为通过 CI 改坏流程（`LOGIC_CONFLICT`） |
+| 修复与流程图冲突 | 修复必然改动执行逻辑，且改动后与 `docs/dev-docs/<开发序号>/<title>-flowchart.md` 的描述冲突 | 立即停止提交；向人类说明冲突点与原因并等待决定，禁止修改流程图迁就代码，禁止为通过 CI 改坏流程（`LOGIC_CONFLICT`） |
 | PR 标题或正文来源缺失 | `docs/dev-docs/<开发序号>/` 下缺少开发文档、Issue、测试报告等第 5 步所需信息 | 中断；使用 `AskUserQuestion` 向人类询问后再写，不得写成未确认的内容（`DOCS_MISSING`） |
 | PR 语言未确认 | 人类尚未确定 PR 标题与正文使用的语言 | 中断，不创建 PR；使用 `AskUserQuestion` 确认「中文」「英文」后再继续（`LANGUAGE_UNCONFIRMED`） |
 | gh 或 git 命令失败 | `gh pr create`、`gh pr ready` 等命令非零退出，或网络、权限报错 | 中断并保留原始报错；向人类报告后由人类决定，禁止伪造 CI 结果或跳过失败（`COMMAND_FAILED`） |
@@ -199,7 +199,7 @@ PR仓库名：From-Issue-To-PR-Skill
 远端仓库类型：fork
 ```
 
-关键步骤：`gh repo view --json isFork,parent` 判定为 fork → 添加 upstream 并 `git fetch upstream`，合并 `upstream/main` 后 `git push origin main` → 将 `feat/001-order` 合入 `main` 并推送 → `gh pr create --draft` 指定 head 为 `main`、目标为 `upstream:main`，得到 PR #45 → CI 报导入顺序错误，按报错最小修复后推送，`gh pr checks 45 --watch` 全部通过 → `gh pr ready 45` → 确认 PR 语言为中文 → 标题取自 `订单系统开发文档.md`，正文取自 Issue、开发文档与 `test-report/测试报告.md` → 写入本地副本 → `python evals/verify_artifacts.py docs/dev-docs/001` 退出码 0。
+关键步骤：`gh repo view --json isFork,parent` 判定为 fork → 添加 upstream 并 `git fetch upstream`，合并 `upstream/main` 后 `git push origin main` → 将 `feat/001-order` 合入 `main` 并推送 → `gh pr create --draft` 指定 head 为 `main`、目标为 `upstream:main`，得到 PR #45 → CI 报导入顺序错误，按报错最小修复后推送，`gh pr checks 45 --watch` 全部通过 → `gh pr ready 45` → 确认 PR 语言为中文 → 标题取自 `order-system-dev-doc.md`，正文取自 Issue、开发文档与 `test-report/test-report.md` → 写入本地副本 → `python evals/verify_artifacts.py docs/dev-docs/001` 退出码 0。
 
 输出：
 
@@ -207,7 +207,7 @@ PR仓库名：From-Issue-To-PR-Skill
 status: success
 artifacts: [
   "https://github.com/<owner>/<repo>/pull/45",
-  "docs/dev-docs/001/From-Issue-To-PR-Skill-45-PR.md"
+  "docs/dev-docs/001/from-issue-to-pr-skill-45-pr.md"
 ]
 errors: []
 ```
@@ -232,7 +232,7 @@ PR仓库名：order-service
 status: success
 artifacts: [
   "https://github.com/<owner>/order-service/pull/46",
-  "docs/dev-docs/001/order-service-46-PR.md"
+  "docs/dev-docs/001/order-service-46-pr.md"
 ]
 errors: []
 ```
@@ -249,14 +249,14 @@ PR仓库名：order-service
 远端仓库类型：fork
 ```
 
-关键步骤：CI 失败指向订单取消分支 → 核对后确认修复须改变状态判定逻辑，且改动后与 `docs/dev-docs/001/订单系统流程图.md` 的「已支付 → 已取消」流转冲突 → 停止提交，未修改流程图，未执行 `gh pr ready`。
+关键步骤：CI 失败指向订单取消分支 → 核对后确认修复须改变状态判定逻辑，且改动后与 `docs/dev-docs/001/order-system-flowchart.md` 的「已支付 → 已取消」流转冲突 → 停止提交，未修改流程图，未执行 `gh pr ready`。
 
 输出：
 
 ```text
 status: failed
 errors: [
-  { code: "LOGIC_CONFLICT", message: "修复需改变取消分支的执行逻辑，与 docs/dev-docs/001/订单系统流程图.md 冲突，已暂停", recoverable: true }
+  { code: "LOGIC_CONFLICT", message: "修复需改变取消分支的执行逻辑，与 docs/dev-docs/001/order-system-flowchart.md 冲突，已暂停", recoverable: true }
 ]
 处理动作：中断；向人类说明冲突点与原因，等待人类决定后再继续
 ```
