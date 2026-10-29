@@ -1,6 +1,6 @@
 # From Issue To PR
 
-From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求，按 8 个固定阶段推进到可合并的 PR，解决「需求到代码之间缺少可追溯产物与统一判定标准」的问题。`spec-manager` 是不占阶段序号的管理角色，负责维护开发规范并一次性分配开发序号、分支、worktree 与开发目录。
+From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求，按 8 个固定阶段推进到可合并的 PR，解决「需求到代码之间缺少可追溯产物与统一判定标准」的问题。`spec-manager` 是不占阶段序号的管理角色，负责维护开发规范并一次性分配开发序号、分支、worktree 与开发工作区。
 
 ## 前置条件
 
@@ -53,7 +53,7 @@ From Issue To PR 是一个 Codex 插件：它把开发者手上模糊的需求�
 
 只想确认需求并创建 Issue，使用独立入口 `/prompts:fitp-issueWriter`；它不调用 `spec-manager`、不分配开发序号，也不生成本地留档。
 
-- 开发序号、分支、worktree 与开发目录由 `spec-manager` 自动分配与登记，无需手动提供。
+- 开发序号、分支、worktree 与开发工作区由 `spec-manager` 自动分配与登记，无需手动提供。
 - 阶段续跑命令可直接粘贴到新对话，从下一阶段继续，避免长链路依赖同一上下文。
 
 ## 许可证

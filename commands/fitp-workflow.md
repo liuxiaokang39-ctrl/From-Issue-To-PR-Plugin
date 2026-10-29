@@ -21,7 +21,7 @@ argument-hint: "[Issue链接] | -devId=<开发序号> -stage=<阶段名> | -devI
 
 1. 先调用 `spec-manager`（bootstrap）做启动检查；启动检查失败时中断，不进入 A 阶段。
 2. 启动检查通过后，用纯文本输出「请描述本次开发计划的需求」，不要改用选项式提问。
-3. 用户描述需求后，携带该需求进入 A 阶段，调用 `issue-writer`；A 阶段内由 `issue-writer` 创建 Issue 后调用 `spec-manager`（allocate）取得开发序号、分支、worktree 与开发目录，并按返回的开发序号本地留档。
+3. 用户描述需求后，以该需求为基础，进入A阶段，调用 `issue-writer`，帮助用户在基础需求上进一步明确需求。创建 Issue 后调用 `spec-manager`（allocate）取得开发序号、分支、worktree 与开发目录，并按返回的开发序号本地留档。
 
 ## 入口二：复用已建 Issue（参数为 Issue 链接）
 
@@ -34,12 +34,12 @@ argument-hint: "[Issue链接] | -devId=<开发序号> -stage=<阶段名> | -devI
 
 ### 参数约束
 
-- `-devId` 必填且为正整数；`docs/dev-docs/<devId>/` 与 `docs/dev-docs/<devId>/开发上下文.md` 必须存在，且登记文件四项（开发序号、分支名、worktree 路径、开发目录）齐全。任一项缺失或不存在时中断，禁止自行创建目录、补编号或猜测登记值。
+- `-devId` 必填且为正整数；`docs/dev-docs/<devId>/` 与 `docs/dev-docs/<devId>/开发上下文.md` 必须存在，且登记内容（开发序号、分支名、worktree 路径、工作区表格）齐全、工作区至少一条「读写」。任一项缺失或不存在时中断，禁止自行创建目录、补编号或猜测登记值。
 - `-stage` 与 `-reStage` 互斥，必须且只能出现一个。
 - `-stage` 允许取值：`dev-doc` / `task` / `implement` / `test-plan` / `test-run` / `doc-sync` / `pr`；A 阶段只通过无参数启动或携带 Issue 链接进入。
 - `-reStage` 允许取值：`dev-doc` / `implement` / `test-plan`。
 - 使用 `-reStage` 时，执行目标阶段前必须读取失败报告目录 `docs/dev-docs/<devId>/failure-report/`（`test-runner` 实际写入的 `docs/dev-docs/<devId>/test-report/failure-report/` 同样有效），确认报告存在且内容非空；报告缺失时中断，不进入目标阶段。
-- 续跑入口不重跑启动检查、不再询问需求、不复用旧对话中的临时结论；开发序号、分支、worktree 与开发目录只取自开发上下文登记文件，其余输入只取自 `docs/dev-docs/<devId>/` 下的产物。
+- 续跑入口不重跑启动检查、不再询问需求、不复用旧对话中的临时结论；开发序号、分支、worktree 与工作区只取自开发上下文登记文件，其余输入只取自 `docs/dev-docs/<devId>/` 下的产物。
 
 ### 阶段与 Skill 映射
 
@@ -58,7 +58,7 @@ argument-hint: "[Issue链接] | -devId=<开发序号> -stage=<阶段名> | -devI
 
 ## 阶段结束输出
 
-每个阶段结束后按固定格式汇报，并给出可直接复制的续跑命令；`pr` 阶段完成后只汇报，不输出命令。
+每个阶段结束后按固定模板汇报，并给出可直接复制的续跑命令；`pr` 阶段完成后只汇报，不输出命令。正常完成与需回流的输出分别使用下列模板，首行固定，命令前的提示语固定。
 
 正常推进：
 
@@ -69,18 +69,19 @@ argument-hint: "[Issue链接] | -devId=<开发序号> -stage=<阶段名> | -devI
 - 下一阶段：<下一阶段名>（<Skill>）
 - 人工门禁：<无 / 待用户确认的事项>
 
-在新对话继续：
+请复制下方命令，在新窗口粘贴发送：
 /prompts:fitp-workflow -devId=<实际开发序号> -stage=<下一阶段>
 ```
 
 测试失败回流：
 
 ```text
-本阶段测试失败，失败报告已生成：<失败报告路径>
+本阶段未完成，需回流：<阶段名>
+- 失败报告：<失败报告路径>
 - 回流目标：<dev-doc / implement / test-plan>
 - 回流原因：<设计错误 / 非设计错误 / 测试流程与实现不一致>
 
-在新对话继续：
+请复制下方命令，在新窗口粘贴发送：
 /prompts:fitp-workflow -devId=<实际开发序号> -reStage=<回流目标>
 ```
 
@@ -89,6 +90,7 @@ argument-hint: "[Issue链接] | -devId=<开发序号> -stage=<阶段名> | -devI
 ## 执行约束
 
 - 启动检查只在全流程启动与复用 Issue 启动两个入口执行；阶段续跑入口禁止重跑启动检查。
-- 开发序号、分支、worktree 与开发目录只由 `spec-manager` 分配与登记，编排过程禁止自行编号、创建或切换分支与 worktree。
+- 开发序号、分支、worktree 与工作区只由 `spec-manager` 分配与登记，编排过程禁止自行编号、创建或删除分支与 worktree；分支状态由各阶段执行前自检，不符时切换到登记分支，切换失败中断。
 - 禁止跳过阶段、并行推进两个阶段，或在阶段产物校验未通过时输出续跑命令。
 - 人工门禁（设计终稿确认、真实部署黑盒测试审核等）未通过时中止当前阶段，不输出越过门禁的续跑命令。
+- 阶段结束输出必须使用上述固定模板：正常块首行为「本阶段已完成」，回流块首行为「本阶段未完成，需回流」，命令前固定输出「请复制下方命令，在新窗口粘贴发送」；正常块只给 `-stage`，回流块只给 `-reStage`。

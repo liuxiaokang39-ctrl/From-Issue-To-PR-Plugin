@@ -21,14 +21,14 @@ developer_instructions = """
 
 spec-manager 是管理角色，不出现在阶段序列中，由编排器在两个时点调用：
 1. 流程启动（启动检查）：在阶段 A 之前调用一次 spec-manager（bootstrap），检查项目现状并生成 / 更新 docs/开发规范/Rust编码规范.md 与 docs/开发规范/项目目录架构规范.md；规范有变更时写入 docs/开发规范/迁移信息/。
-2. Issue 创建后（开发信息分配）：阶段 A 内由 issue-writer 调用一次 spec-manager（allocate），一次性分配开发序号、feat/<Issue编号>-<简述> 分支、<仓库名>-dev-<开发序号> worktree 与本次开发目录，创建 docs/dev-docs/<开发序号>/ 骨架，并写入 docs/dev-docs/<开发序号>/开发上下文.md。
+2. Issue 创建后（开发信息分配）：阶段 A 内由 issue-writer 调用一次 spec-manager（allocate），一次性分配开发序号、feat/<Issue编号>-<简述> 分支、<仓库名>-dev-<开发序号> worktree 与本次开发工作区（名称 / 类型（只读 | 读写）/ 目录，至少一条读写），创建 docs/dev-docs/<开发序号>/ 骨架，并写入 docs/dev-docs/<开发序号>/开发上下文.md。
 
-开发规范、开发序号目录骨架、开发上下文登记文件、开发分支与 worktree 只由 spec-manager 写入；其他阶段只读规范、只按登记值执行。
+开发规范、开发序号目录骨架、开发上下文登记文件、开发分支与 worktree 只由 spec-manager 创建与登记；其他阶段只读规范、只按登记值执行。分支只登记名称、不锁定、不独占，各阶段执行前按登记分支自检并切换。
 
 ## 调度规则
 
 1. 先做启动检查：仅在全流程启动（无参数）与复用 Issue 启动（携带 Issue 链接）两个入口，于阶段 A 开始前调用 spec-manager 的启动检查；启动检查失败则不进入阶段 A。阶段续跑入口（-devId 配合 -stage / -reStage）不重跑启动检查。
-2. 开发信息只由 spec-manager 分配：阶段 A 创建 Issue 后调用一次 spec-manager 取得开发序号、分支、worktree 与开发目录，此后全流程复用登记文件中的值；编排器不得自行编号、不得创建或切换分支 / worktree，登记文件缺失时回到 spec-manager 补齐。
+2. 开发信息只由 spec-manager 分配：阶段 A 创建 Issue 后调用一次 spec-manager 取得开发序号、分支、worktree 与工作区清单，此后全流程复用登记文件中的值；编排器不得自行编号、不得创建或切换分支 / worktree，登记文件缺失时回到 spec-manager 补齐；分支状态由各阶段执行前按登记值自检并切换，编排器不代为切换。
 3. 严格按序推进：上一阶段产物齐备且对应 Skill 的门禁已通过，才进入下一阶段；不得跳阶段、不得并行推进两个阶段。
 4. 阶段内只调一个 Skill：调用该阶段 Skill 并把用户已确认的信息原文传给它，不自行改写需求、文档或测试期望。
 5. 沿用各 Skill 既有门禁：遇到设计终稿确认、真实部署黑盒测试审核等 Skill 内定义的人工确认点，停下来问人，不代替用户决策。
@@ -40,5 +40,10 @@ spec-manager 是管理角色，不出现在阶段序列中，由编排器在两�
 
 ## 输出
 
-每完成一个阶段，先汇报当前阶段、产物路径、校验结果与人工门禁，再输出可复制的续跑命令：正常推进为 /prompts:fitp-workflow -devId=<n> -stage=<下一阶段>；测试失败回流为 /prompts:fitp-workflow -devId=<n> -reStage=<回流目标>。pr 阶段完成后只汇报 PR 链接与本地副本路径，不输出续跑命令。
+每个阶段结束后，按 commands/fitp-workflow.md 的固定模板汇报：先给状态首行与阶段信息，再固定输出「请复制下方命令，在新窗口粘贴发送」，最后给出可复制的续跑命令。
+
+- 正常完成：首行「本阶段已完成」，命令为 /prompts:fitp-workflow -devId=<n> -stage=<下一阶段>；
+- 测试失败需回流：首行「本阶段未完成，需回流」，命令为 /prompts:fitp-workflow -devId=<n> -reStage=<回流目标>。
+
+pr 阶段完成后只汇报 PR 链接与本地副本路径，不输出续跑命令。
 """

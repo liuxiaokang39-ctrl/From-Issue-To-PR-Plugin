@@ -18,7 +18,7 @@ metadata:
 
 ## 必要前提
 
-1. **待合并分支与开发信息已登记**：分支名、worktree 路径与开发序号取自 `docs/dev-docs/<开发序号>/开发上下文.md`；Issue 编号与 PR 所在仓库名取自同目录的 Issue 留档与分支名。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）；Issue 编号或仓库名无法确定时使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测。
+1. **待合并分支与开发信息已登记**：分支名、worktree 路径与开发序号取自 `docs/dev-docs/<开发序号>/开发上下文.md`；Issue 编号与 PR 所在仓库名取自同目录的 Issue 留档与分支名。登记文件缺失或不一致时中断，回到 `spec-manager` 补齐（`CONTEXT_MISSING`）；Issue 编号或仓库名无法确定时使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测。执行前用 `git branch --show-current` 检查当前分支是否为登记的「分支名」；不是时切换到该分支，切换失败则中断并报告（`BRANCH_MISMATCH`）。
 2. **远端仓库类型可判断**：`git remote -v` 与 `gh repo view --json isFork,parent` 能确认当前远端是主仓库还是 fork 仓库。无法判断时中断，使用 `AskUserQuestion` 向人类确认，不自行执行同步（`REPO_UNKNOWN`）。
 3. **工作区干净**：`git status` 显示无未提交改动。存在未提交改动时中断，使用 `AskUserQuestion` 向人类确认处理方式，不强行切换分支或丢弃改动（`WORKTREE_DIRTY`）。
 4. **git 与 gh 可用**：`git status` 与 `gh auth status` 均能成功执行，当前仓库存在 `main` 分支。不满足时中断并保留原始报错，提示人类配置 git / gh 后重试（`GIT_UNAVAILABLE`）。
@@ -31,7 +31,8 @@ metadata:
 - 必须：PR 标题与正文的语言须先用 `AskUserQuestion` 向人类确认（选项至少包含「中文」「英文」，用户可通过「Other」指定其他语言），并按确认的语言撰写；未确认语言时不得创建 PR。
 - 必须：分支名、开发序号与 worktree 路径一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行；仓库类型、PR 的目标仓库、PR 标题与正文来源无法判断或缺失时，先用 `AskUserQuestion` 向人类确认，再继续。
 - 必须：开发规范（`docs/开发规范/`）只读。
-- 禁止：创建 / 切换 / 重命名开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；提交流程中按登记分支执行，合并所需的 `main` 操作按第 2、3 步流程进行。
+- 禁止：创建 / 重命名 / 删除开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；当前分支不是登记分支时，只允许切换到登记分支，切换失败中断；合并所需的 `main` 操作按第 2、3 步流程进行。
+- 必须：凡需要向人类提问或确认的环节（仓库类型、PR 语言、未提交改动处理、合并冲突、失败处理去向等），一律使用 `AskUserQuestion`（或同类选项式接口）给出可选方案，禁止只以纯文本开放式提问；人类可通过「Other」补充选项之外的内容。唯一例外为流程启动时由入口输出的「请描述本次开发计划的需求」。
 - 禁止：CI 未全部通过时转为可评审、请求合并，或以 `--admin` 等方式强制合并。
 - 禁止：跳过、禁用、忽略 CI 检查，或虚构 CI 结果。
 - 禁止：自行解决合并冲突或改动合并策略；冲突交由人类决定。
@@ -168,6 +169,7 @@ SkillError {
 | 失败场景 | 判定条件 | 处理动作 |
 | --- | --- | --- |
 | 开发上下文登记文件缺失 | `docs/dev-docs/<开发序号>/开发上下文.md` 不存在，或登记的分支名、开发序号、worktree 路径不一致 | 中断，不执行 git / gh 操作；回到 `spec-manager` 补齐登记文件后再继续（`CONTEXT_MISSING`） |
+| 当前分支不是登记分支 | `git branch --show-current` 与登记「分支名」不一致，且切换失败 | 中断并保留原始报错；提示人类检查分支状态后重试，禁止自行创建分支（`BRANCH_MISMATCH`） |
 | 仓库信息缺失 | Issue 编号或 PR 所在仓库名无法从 docs 确定 | 中断；使用 `AskUserQuestion` 向人类确认后再继续，禁止凭提交记录猜测（`INPUT_MISSING`） |
 | 远端仓库类型无法判断 | `git remote -v` 与 `gh repo view --json isFork,parent` 无法判定主仓库或 fork，或没有远端仓库 | 中断；使用 `AskUserQuestion` 向人类确认仓库类型后再继续，不自行执行同步（`REPO_UNKNOWN`） |
 | 工作区不干净 | `git status` 显示存在未提交改动 | 中断；使用 `AskUserQuestion` 向人类确认处理方式，禁止强行切换分支或丢弃改动（`WORKTREE_DIRTY`） |
