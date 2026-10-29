@@ -21,7 +21,7 @@ argument-hint: "[Issue链接] | -devId=<开发序号> -stage=<阶段名> | -devI
 
 1. 先调用 `spec-manager`（bootstrap）做启动检查；启动检查失败时中断，不进入 A 阶段。
 2. 启动检查通过后，用纯文本输出「请描述本次开发计划的需求」，不要改用选项式提问。
-3. 用户描述需求后，以该需求为基础，进入A阶段，调用 `issue-writer`，帮助用户在基础需求上进一步明确需求。
+3. 用户描述需求后，以该需求为基础，进入A阶段，调用 `issue-writer`，帮助用户在基础需求上进一步明确需求。创建 Issue 后调用 `spec-manager`（allocate）取得开发序号、分支、worktree 与开发目录，并按返回的开发序号本地留档。
 
 ## 入口二：复用已建 Issue（参数为 Issue 链接）
 
