@@ -4,7 +4,7 @@ description: 编码实现阶段：读取开发文档、流程图与任务清单�
 compatibility: python3.12+
 metadata:
   author: XK_XK
-  version: 1.1
+  version: 1.2
 ---
 
 # implementer
@@ -36,7 +36,8 @@ metadata:
 - 禁止：开发文档、流程图或任务清单缺失时自行脑补，必须回到对应上游阶段补齐。
 - 禁止：未达到「验收标准」的任务标记完成；任务报告缺失或未覆盖「修改的信息」「修改的文件与文件内位置」「检查结果」三项的，同样不得标记完成。
 - 禁止：跳过 commit 或 push；commit 失败时禁止使用 `--amend`、`--no-verify` 绕过，必须修复后新建 commit。
-- 只能修改：任务声明的读写工作区，以及 `docs/dev-docs/<开发序号>/task-report/`。
+- 禁止：修改项目的 Git 系文件——包括 `.git/` 目录及其内部文件，以及 `.gitignore`、`.gitattributes`、`.gitmodules` 等 Git 配置文件与钩子；确需改动时停止该任务并交人类处理。
+- 只能修改：任务声明的读写工作区，以及 `docs/dev-docs/<开发序号>/task-report/`；两者均不包含 Git 系文件。
 
 **参考文件**：本 Skill 附带下列文件，此处仅**显式声明其存在**，不展开其正文：
 
@@ -144,6 +145,7 @@ SkillError {
 | 改动越界             | 改动出现在只读工作区、任务声明的工作区之外或 `task-report/` 之外                        | 中断；回退越界改动后重新实现该任务（`OUT_OF_SCOPE_CHANGE`）                                        |
 | 验收标准未通过          | 任务「验收标准」中任一项核对不通过                                               | 不得标记该任务完成；修正实现后重新验收（`ACCEPTANCE_FAILED`）                                        |
 | commit 或 push 失败 | git / gh 命令非零退出，或提交钩子失败                                         | 中断并保留原始报错；修复问题后新建 commit，禁止 `--amend`、`--no-verify`；push 失败同样不得跳过（`GIT_FAILED`） |
+| 改动涉及 Git 系文件 | 任务或实现需要写入 `.git/`、`.gitignore`、`.gitattributes`、`.gitmodules` 等 Git 系文件 | 中断该任务并还原对 Git 系文件的改动；向人类说明原因，由人类决定后续处理（`GIT_FILE_PROTECTED`） |
 | 产物校验未通过          | 「5. 校验」中任一项不满足，或 `verify_artifacts.py` 以退出码 1 结束                | 本阶段不得收尾；按校验结果回到第 2 步修正后重新校验（`VALIDATION_FAILED`）                                |
 
 ## 示例

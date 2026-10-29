@@ -4,7 +4,7 @@ description: 提交 PR 阶段：明确待合并分支，fork 仓库先同步上�
 compatibility: python3.12+；依赖 git 与 gh CLI（GitHub CLI），执行时 git 与 gh 须可用且 gh auth status 已登录认证，并具备创建 PR、查看 CI 检查的权限。
 metadata:
   author: XK_XK
-  version: 1.1
+  version: 1.2
 ---
 
 # pr-creator
@@ -28,6 +28,7 @@ metadata:
 - 必须：CI 全部通过才算提交完成——PR 先以草稿形式创建以触发 CI，所有 CI 检查实际通过后，才可标记为可评审并请求合并。
 - 必须：奥卡姆剃刀——只修改 CI 报错明确指出的错误，不做报错之外的任何改动、重构或「顺手改进」。
 - 必须：若修复必然改动代码的执行逻辑，改动后的行为须与 `docs/dev-docs/<开发序号>/<标题>流程图.md` 的描述一致；与流程图冲突时立即停止提交，向人类说明冲突点与原因并等待决定。
+- 必须：PR 标题与正文的语言须先用 `AskUserQuestion` 向人类确认（选项至少包含「中文」「英文」，用户可通过「Other」指定其他语言），并按确认的语言撰写；未确认语言时不得创建 PR。
 - 必须：分支名、开发序号与 worktree 路径一律取自 `docs/dev-docs/<开发序号>/开发上下文.md`，只按登记值执行；仓库类型、PR 的目标仓库、PR 标题与正文来源无法判断或缺失时，先用 `AskUserQuestion` 向人类确认，再继续。
 - 必须：开发规范（`docs/开发规范/`）只读。
 - 禁止：创建 / 切换 / 重命名开发分支或 worktree，禁止写入开发规范与开发上下文登记文件；提交流程中按登记分支执行，合并所需的 `main` 操作按第 2、3 步流程进行。
@@ -91,7 +92,9 @@ metadata:
 
 ### 5. 从 docs 获取 PR 标题与正文
 
-PR 标题与正文一律取自 `docs/` 下对应序号的文件，不自行编造、不引入 docs 之外的信息：
+先使用 `AskUserQuestion` 向人类确认 PR 标题与正文使用的语言，选项为「中文」「英文」，用户可通过「Other」指定其他语言；未确认语言前不得撰写或创建 PR。
+
+PR 标题与正文一律取自 `docs/` 下对应序号的文件，并按已确认的语言撰写，不自行编造、不引入 docs 之外的信息：
 
 - **标题**：取自 `docs/dev-docs/<开发序号>/<标题>开发文档.md` 文件名中的 `<标题>`；
 - **背景**：取自 `docs/dev-docs/<开发序号>/<仓库名>-<issue编号>-issue.md`；
@@ -100,11 +103,11 @@ PR 标题与正文一律取自 `docs/` 下对应序号的文件，不自行编�
 - **影响面**：取自开发文档声明的工作区与本次 diff 涉及的文件；
 - **回滚方案**：依据本次 diff 与开发文档的改动范围给出。
 
-docs 中缺失对应信息时，使用 `AskUserQuestion` 向人类询问后再写，不得写成未确认的内容。标题与正文各段齐备后，进入第 6 步。
+docs 中缺失对应信息时，使用 `AskUserQuestion` 向人类询问后再写，不得写成未确认的内容。语言已确认且标题与正文各段齐备后，进入第 6 步。
 
 ### 6. 按 GitHub 社区规范编写 PR
 
-PR 标题、正文格式与创建命令遵循 GitHub 社区规范。
+PR 标题、正文格式与创建命令遵循 GitHub 社区规范，标题与正文按第 5 步确认的语言撰写。
 
 **参考文件**：本 Skill 附带 `references/GitHub-CLI.md`（gh 命令参考，含 `gh pr create`、`gh pr checks`、`gh pr ready`）与 `references/GitHub-submit.md`（Conventional Commits 规范与 Git 安全约束），据此选定参数。此处仅**显式声明其存在**；**仅在创建 / 编辑 PR、执行 git 或 gh 命令时**读取这两个文件内容，其余阶段不展开其正文。
 
@@ -118,6 +121,7 @@ PR 创建成功后，从返回的 PR URL 取得 `<PR编号>`，在 `docs/dev-doc
 
 - CI 全部检查已实际通过（`gh pr checks <PR编号>` 无失败、无待处理项），PR 已用 `gh pr ready <PR编号>` 转为可评审，且未使用 `--admin` 或跳过、禁用、忽略检查；
 - PR 标题取自 `docs/dev-docs/<开发序号>/<标题>开发文档.md` 的文件名，正文各段取自第 5 步声明的 docs 文件与真实 diff，未引入 docs 之外的信息；
+- PR 标题与正文的语言与第 5 步人类确认的语言一致；
 - 本地副本 `docs/dev-docs/<开发序号>/<仓库名>-<PR编号>-PR.md` 存在且内容非空，标题与正文与远端 PR 一致；
 - 除远端 PR 与本地副本外未新增文件或目录，`--body-file` 临时文件已删除且位于仓库之外。
 
@@ -137,6 +141,7 @@ pr_creator(
   开发序号: string,                         // 必填：取自同一登记文件的「开发序号」
   Issue编号: string,                        // 必填：用于取 PR 背景，取自同目录 Issue 留档
   PR仓库名: string,                         // 必填：PR 所在仓库名，用于本地副本命名，取自同目录 Issue 留档
+  PR语言: "中文" | "英文" | null,           // 可选：PR 标题与正文语言；未确认时必须先用 AskUserQuestion 确认
   远端仓库类型: "main" | "fork" | null,     // 可选：由第 2 步判断；无法判断时向人类确认
 ) -> SkillResult
 
@@ -173,6 +178,7 @@ SkillError {
 | CI 检查失败 | `gh pr checks <PR编号>` 存在失败的检查 | 按 `gh run view <run-id> --log-failed` 的报错原文最小修复并推送，重新等待 CI，直至全部检查通过（`CI_FAILED`） |
 | 修复与流程图冲突 | 修复必然改动执行逻辑，且改动后与 `docs/dev-docs/<开发序号>/<标题>流程图.md` 的描述冲突 | 立即停止提交；向人类说明冲突点与原因并等待决定，禁止修改流程图迁就代码，禁止为通过 CI 改坏流程（`LOGIC_CONFLICT`） |
 | PR 标题或正文来源缺失 | `docs/dev-docs/<开发序号>/` 下缺少开发文档、Issue、测试报告等第 5 步所需信息 | 中断；使用 `AskUserQuestion` 向人类询问后再写，不得写成未确认的内容（`DOCS_MISSING`） |
+| PR 语言未确认 | 人类尚未确定 PR 标题与正文使用的语言 | 中断，不创建 PR；使用 `AskUserQuestion` 确认「中文」「英文」后再继续（`LANGUAGE_UNCONFIRMED`） |
 | gh 或 git 命令失败 | `gh pr create`、`gh pr ready` 等命令非零退出，或网络、权限报错 | 中断并保留原始报错；向人类报告后由人类决定，禁止伪造 CI 结果或跳过失败（`COMMAND_FAILED`） |
 | 校验脚本无法执行 | Python 未安装、脚本路径错误或权限不足 | 中断并保留原始报错；提示人类安装 Python 或检查路径后重试，禁止以手工检查替代脚本（`SCRIPT_FAILED`） |
 | 产物校验未通过 | 「7. 校验」中任一项不满足，或 `verify_artifacts.py` 以退出码 1 结束 | 本阶段不得收尾；回到第 6 步补齐 PR 信息或本地副本后重新校验（`VALIDATION_FAILED`） |
@@ -191,7 +197,7 @@ PR仓库名：From-Issue-To-PR-Skill
 远端仓库类型：fork
 ```
 
-关键步骤：`gh repo view --json isFork,parent` 判定为 fork → 添加 upstream 并 `git fetch upstream`，合并 `upstream/main` 后 `git push origin main` → 将 `feat/001-order` 合入 `main` 并推送 → `gh pr create --draft` 指定 head 为 `main`、目标为 `upstream:main`，得到 PR #45 → CI 报导入顺序错误，按报错最小修复后推送，`gh pr checks 45 --watch` 全部通过 → `gh pr ready 45` → 标题取自 `订单系统开发文档.md`，正文取自 Issue、开发文档与 `test-report/测试报告.md` → 写入本地副本 → `python evals/verify_artifacts.py docs/dev-docs/001` 退出码 0。
+关键步骤：`gh repo view --json isFork,parent` 判定为 fork → 添加 upstream 并 `git fetch upstream`，合并 `upstream/main` 后 `git push origin main` → 将 `feat/001-order` 合入 `main` 并推送 → `gh pr create --draft` 指定 head 为 `main`、目标为 `upstream:main`，得到 PR #45 → CI 报导入顺序错误，按报错最小修复后推送，`gh pr checks 45 --watch` 全部通过 → `gh pr ready 45` → 确认 PR 语言为中文 → 标题取自 `订单系统开发文档.md`，正文取自 Issue、开发文档与 `test-report/测试报告.md` → 写入本地副本 → `python evals/verify_artifacts.py docs/dev-docs/001` 退出码 0。
 
 输出：
 
@@ -216,7 +222,7 @@ PR仓库名：order-service
 远端仓库类型：main
 ```
 
-关键步骤：判定非 fork，跳过上游同步 → 将 `feat/001-order` 合入 `main` 并推送 → `main` 无法作为 head 向自身提交 PR，使用 `AskUserQuestion` 请人类确认改用 `feat/001-order` 作为 head → 草稿 PR 创建成功 → CI 全部通过后 `gh pr ready` → 正文取自 docs → 写入本地副本 → 校验脚本退出码 0。
+关键步骤：判定非 fork，跳过上游同步 → 将 `feat/001-order` 合入 `main` 并推送 → `main` 无法作为 head 向自身提交 PR，使用 `AskUserQuestion` 请人类确认改用 `feat/001-order` 作为 head → 草稿 PR 创建成功 → CI 全部通过后 `gh pr ready` → 确认 PR 语言为英文 → 正文取自 docs → 写入本地副本 → 校验脚本退出码 0。
 
 输出：
 
