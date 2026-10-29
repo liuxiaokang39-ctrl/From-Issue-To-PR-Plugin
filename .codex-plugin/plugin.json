@@ -1,6 +1,6 @@
 {
   "name": "from-issue-to-pr",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "本项目核心目标是通过插件辅助开发者健康、快速地完成项目的开发与迭代。",
   "author": {
     "name": "XK_XK"

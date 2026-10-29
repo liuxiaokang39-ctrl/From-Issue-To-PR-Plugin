@@ -57,10 +57,10 @@ codex plugin add from-issue-to-pr@from-issue-to-pr
 
 ### GitHub ［Agent 执行］
 
-当前仓库默认分支为 `main`，直接安装即可，无需 `--ref`：
+本版本位于 `beta/codex-plugin-0.2.0` 分支，需用 `--ref` 固定；`main` 为开发分支，不保证与本版本一致：
 
 ```powershell
-codex plugin marketplace add liuxiaokang39-ctrl/From-Issue-To-PR-Skill
+codex plugin marketplace add liuxiaokang39-ctrl/From-Issue-To-PR-Skill --ref beta/codex-plugin-0.2.0
 codex plugin add from-issue-to-pr@from-issue-to-pr
 ```
 
@@ -187,4 +187,4 @@ Select-String -Path "$HOME\.codex\config.toml" -Pattern 'multi_agent|\[agents\.w
 - Hook 只覆盖 Codex 的 `Bash`（`exec_command`）与 `apply_patch`；通过其他工具或脚本
   写文件时不会触发产物校验。
 - 插件不改变 Codex 的沙箱与审批设置，也不替代 Codex 自身的权限确认。
-- GitHub 安装默认使用 `main` 分支；如需固定版本，可自行加 `--ref <分支或标签>`。
+- GitHub 安装应固定版本分支 `beta/codex-plugin-0.2.0`；`main` 为开发分支，不保证与本版本一致。
